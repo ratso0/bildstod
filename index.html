@@ -129,6 +129,18 @@
       display: none; z-index: 5;
     }
     body.adult .card-del { display: flex; }
+    .card-edit {
+      position: absolute; top: 8px; left: 8px;
+      width: 36px; height: 36px; border-radius: 50%;
+      background: var(--blue); color: white; border: none;
+      font-size: 1rem; cursor: pointer;
+      align-items: center; justify-content: center;
+      box-shadow: 0 2px 8px rgba(17,138,178,0.4);
+      display: none; z-index: 5;
+    }
+    body.adult .card-edit { display: flex; }
+    /* Hide audio badge in adult mode so edit button has room */
+    body.adult .audio-badge { display: none; }
 
     /* Vibrant card colors */
     .c0 { border-color: #FFD166; } .c0 .card-visual { background: #FFFBEC; }
@@ -376,6 +388,40 @@
   </div>
 </div>
 
+<!-- EDIT MODAL -->
+<div class="overlay" id="editOverlay">
+  <div class="modal">
+    <div class="mhandle"></div>
+    <h2 id="editTitle">Redigera</h2>
+    <div class="step active" style="display:flex">
+      <span class="step-hint">Ändra bild, namn och ljud</span>
+      <div class="photo-tap" id="ePhotoArea"><div class="pt-hint"><span>📷</span><small>Tryck för att byta bild</small></div></div>
+      <div class="emoji-row-wrap" id="eEmojiWrap" style="width:100%;max-width:340px;display:none">
+        <input type="text" id="eEmojiSearch" placeholder="🔍 Sök emoji…" maxlength="30" style="margin-bottom:8px;border-color:#eee">
+        <div class="emoji-row" id="eEmojiRow"></div>
+        <div style="font-size:.75rem;color:#bbb;font-weight:700;text-align:center;margin-top:-6px">← Svep för fler →</div>
+      </div>
+      <input type="text" id="eName" placeholder="Namn…" maxlength="20">
+      <div id="eAudioSection" style="width:100%;max-width:320px;display:flex;flex-direction:column;align-items:center;gap:10px">
+        <audio id="eAudPrev" controls style="display:none"></audio>
+        <button class="mbtn mb-red" id="eRecordBtn">🎙️ Spela in nytt ljud</button>
+        <div id="eRecActive" style="display:none">
+          <div class="rec-wrap">
+            <div class="rec-ind"><div class="rec-dot"></div>Spelar in…</div>
+            <button class="mbtn mb-dark" id="eStopBtn">⏹ Stoppa inspelning</button>
+          </div>
+        </div>
+        <button class="mbtn mb-lavender" id="eUploadAudioBtn">📂 Välj ljudfil</button>
+        <button class="mbtn mb-gray" id="eRemoveAudioBtn" style="display:none">🔇 Ta bort ljud</button>
+      </div>
+      <button class="mbtn mb-green" id="eSave">💾 Spara ändringar</button>
+      <button class="mbtn mb-gray" id="eCancel">✕ Avbryt</button>
+    </div>
+    <input type="file" id="eFileInput" accept="image/*">
+    <input type="file" id="eAudioFileInput" accept="audio/*">
+  </div>
+</div>
+
 <div class="toast" id="toastEl"></div>
 
 <script>
@@ -393,6 +439,7 @@ const txS=m=>db.transaction('nodes',m||'readonly').objectStore('nodes');
 const dbAll=()=>db?new Promise((res,rej)=>{const r=txS().getAll();r.onsuccess=e=>res(e.target.result);r.onerror=rej;}):Promise.resolve([]);
 const dbAdd=n=>db?new Promise((res,rej)=>{const r=txS('readwrite').add(n);r.onsuccess=e=>res(e.target.result);r.onerror=rej;}):Promise.resolve(Math.random());
 const dbDel=id=>db?new Promise((res,rej)=>{const t=db.transaction('nodes','readwrite');t.objectStore('nodes').delete(id);t.oncomplete=res;t.onerror=rej;}):Promise.resolve();
+const dbPut=n=>db?new Promise((res,rej)=>{const r=txS('readwrite').put(n);r.onsuccess=e=>res(e.target.result);r.onerror=rej;}):Promise.resolve();
 
 // ── Confirm ──
 let confirmResolve=null;
@@ -599,6 +646,14 @@ function render(){
     });
     el.appendChild(del);
 
+    const edit=document.createElement('button');edit.className='card-edit';edit.textContent='✏️';
+    edit.addEventListener('click',e=>{
+      e.stopPropagation();e.preventDefault();
+      if(!isAdult)return;
+      openEditModal(node);
+    });
+    el.appendChild(edit);
+
     el.addEventListener('click',()=>{
       if(isF){nav.push({id:node.id,name:node.name,emoji:node.emoji});render();}
       else playCard(node,el);
@@ -658,7 +713,7 @@ $('c2Back').addEventListener('click',()=>{pAudio=null;$('audPrev').style.display
 
 function setPhotoArea(id,src){const a=$(id);a.innerHTML='';const img=document.createElement('img');img.src=src;a.appendChild(img);}
 $('fPhotoArea').addEventListener('click',()=>{fileTgt='folder';fileInp.removeAttribute('capture');fileInp.click();});
-$('cPhotoArea').addEventListener('click',()=>{fileTgt='card';fileInp.setAttribute('capture','environment');fileInp.click();});
+$('cPhotoArea').addEventListener('click',()=>{fileTgt='card';fileInp.removeAttribute('capture');fileInp.click();});
 fileInp.addEventListener('change',()=>{
   const file=fileInp.files[0];if(!file)return;
   const reader=new FileReader();
@@ -736,6 +791,123 @@ async function saveCard(skip){
 }
 $('saveCard').addEventListener('click',()=>saveCard(false));
 $('skipAudio').addEventListener('click',()=>saveCard(true));
+
+// ── Edit Modal ──
+const editOverlay=document.getElementById('editOverlay');
+const eFileInput=document.getElementById('eFileInput');
+const eAudioFileInput=document.getElementById('eAudioFileInput');
+let editNode=null, eImg=null, eAudio=null, eEmoji=null, eMediaRec=null, eAudioChunks=[];
+
+function openEditModal(node){
+  editNode=node;
+  eImg=node.imageData||null;
+  eAudio=node.audioData||null;
+  eEmoji=node.emoji||null;
+  const isF=node.type==='folder';
+  $('editTitle').textContent=isF?'Redigera kategori':'Redigera bildkort';
+  $('eName').value=node.name||'';
+  // Photo
+  if(eImg) setPhotoArea('ePhotoArea',eImg);
+  else $('ePhotoArea').innerHTML='<div class="pt-hint"><span>📷</span><small>Tryck för att byta bild</small></div>';
+  // Emoji picker only for folders
+  if(isF){
+    $('eEmojiWrap').style.display='';
+    $('eEmojiSearch').value='';
+    buildEEmojis();
+  } else {
+    $('eEmojiWrap').style.display='none';
+  }
+  // Audio
+  if(eAudio){ $('eAudPrev').src=eAudio; $('eAudPrev').style.display='block'; $('eRemoveAudioBtn').style.display=''; }
+  else { $('eAudPrev').style.display='none'; $('eAudPrev').src=''; $('eRemoveAudioBtn').style.display='none'; }
+  $('eRecActive').style.display='none';
+  $('eRecordBtn').textContent='🎙️ Spela in nytt ljud';
+  editOverlay.classList.add('open');
+}
+function closeEditModal(){ editOverlay.classList.remove('open'); stopERec(); editNode=null; }
+
+editOverlay.addEventListener('click',e=>{if(e.target===editOverlay)closeEditModal();});
+$('eCancel').addEventListener('click',closeEditModal);
+
+// Edit emoji picker
+function buildEEmojis(filter=''){
+  const row=$('eEmojiRow');row.innerHTML='';
+  const q=filter.toLowerCase().trim();
+  const filtered=q?EMOJI_DATA.filter(d=>d.slice(1).some(k=>k.includes(q))):EMOJI_DATA;
+  if(filtered.length===0){const m=document.createElement('div');m.style.cssText='color:#bbb;font-weight:700;font-size:.9rem;padding:16px 10px;white-space:nowrap';m.textContent='Inga emojis hittades';row.appendChild(m);return;}
+  filtered.forEach(d=>{
+    const em=d[0];const b=document.createElement('button');b.className='eopt';b.textContent=em;
+    if(eEmoji===em)b.classList.add('sel');
+    b.addEventListener('click',()=>{eEmoji=em;row.querySelectorAll('.eopt').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');});
+    row.appendChild(b);
+  });
+}
+$('eEmojiSearch').addEventListener('input',function(){buildEEmojis(this.value);});
+
+// Edit photo
+$('ePhotoArea').addEventListener('click',()=>{eFileInput.removeAttribute('capture');eFileInput.click();});
+eFileInput.addEventListener('change',()=>{
+  const file=eFileInput.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const imgEl=new Image();
+    imgEl.onload=()=>{
+      const canvas=document.createElement('canvas');
+      const MAX=600;let w=imgEl.width,h=imgEl.height;
+      if(w>h&&w>MAX){h=h*MAX/w;w=MAX;}else if(h>MAX){w=w*MAX/h;h=MAX;}
+      canvas.width=w;canvas.height=h;canvas.getContext('2d').drawImage(imgEl,0,0,w,h);
+      eImg=canvas.toDataURL('image/jpeg',0.8);
+      setPhotoArea('ePhotoArea',eImg);
+      eEmoji=null; // photo overrides emoji
+    };imgEl.src=e.target.result;
+  };reader.readAsDataURL(file);eFileInput.value='';
+});
+
+// Edit audio
+$('eRecordBtn').addEventListener('click',startERec);
+$('eStopBtn').addEventListener('click',stopERec);
+async function startERec(){
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    eAudioChunks=[];const opts=MediaRecorder.isTypeSupported('audio/webm')?{mimeType:'audio/webm'}:{};
+    eMediaRec=new MediaRecorder(stream,opts);
+    eMediaRec.ondataavailable=e=>{if(e.data.size>0)eAudioChunks.push(e.data);};
+    eMediaRec.onstop=()=>{
+      stream.getTracks().forEach(t=>t.stop());
+      const blob=new Blob(eAudioChunks,{type:eMediaRec.mimeType||'audio/webm'});
+      const r=new FileReader();r.onload=e=>{eAudio=e.target.result;$('eAudPrev').src=eAudio;$('eAudPrev').style.display='block';$('eRemoveAudioBtn').style.display='';};r.readAsDataURL(blob);
+      $('eRecActive').style.display='none';$('eRecordBtn').textContent='🎙️ Spela in igen';
+    };
+    eMediaRec.start();$('eRecActive').style.display='';$('eRecordBtn').style.display='none';
+  }catch{toast('Mikrofonåtkomst nekad 🎙️');}
+}
+function stopERec(){if(eMediaRec&&eMediaRec.state==='recording'){eMediaRec.stop();$('eRecordBtn').style.display='';}}
+$('eUploadAudioBtn').addEventListener('click',()=>eAudioFileInput.click());
+eAudioFileInput.addEventListener('change',()=>{
+  const file=eAudioFileInput.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{eAudio=e.target.result;$('eAudPrev').src=eAudio;$('eAudPrev').style.display='block';$('eRemoveAudioBtn').style.display='';toast('Ljudfil inläst! ✅');};
+  reader.readAsDataURL(file);eAudioFileInput.value='';
+});
+$('eRemoveAudioBtn').addEventListener('click',()=>{
+  eAudio=null;$('eAudPrev').style.display='none';$('eAudPrev').src='';$('eRemoveAudioBtn').style.display='none';toast('Ljud borttaget');
+});
+
+// Save edit
+$('eSave').addEventListener('click',async()=>{
+  try{
+    stopERec();
+    const name=$('eName').value.trim();
+    if(!name){toast('Skriv ett namn! ✏️');return;}
+    editNode.name=name;
+    editNode.imageData=eImg||null;
+    editNode.audioData=eAudio||null;
+    if(editNode.type==='folder') editNode.emoji=eEmoji||null;
+    // Update in DB: delete old, add updated (keep same id via put)
+    await dbPut(editNode);
+    render();closeEditModal();toast('Ändringar sparade! ✅');
+  }catch(err){toast('Fel: '+err.message);}
+});
 
 // ── Seed ──
 const DEFAULTS=[{name:'Hemma',emoji:'🏠'},{name:'Skola',emoji:'🏫'},{name:'Humör',emoji:'😊'},{name:'Toalett',emoji:'🚽'},{name:'Mat',emoji:'🍽️'}];
