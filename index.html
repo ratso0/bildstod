@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Bildstöd">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#118AB2">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%23118AB2'/%3E%3Ctext x='90' y='128' font-size='100' text-anchor='middle'%3E🗣️%3C/text%3E%3C/svg%3E">
+  <title>Bildstöd</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --green: #06D6A0; --red: #EF476F; --blue: #118AB2;
+      --purple: #7C3AED; --text: #1A1A2E;
+    }
+    html, body {
+      height: 100%; overflow: hidden;
+      font-family: 'Nunito', sans-serif;
+      background: #F0F4FF;
+      color: var(--text);
+    }
+    #app { display: flex; flex-direction: column; height: 100dvh; height: 100vh; }
+
+    /* ── HEADER ── */
+    header {
+      flex-shrink: 0;
+      background: linear-gradient(135deg, #118AB2, #06D6A0);
+      padding: 14px 16px 12px;
+      display: flex; align-items: center; gap: 12px;
+      box-shadow: 0 4px 20px rgba(17,138,178,0.35);
+      z-index: 20; transition: background 0.4s;
+    }
+    header.adult-mode { background: linear-gradient(135deg, #7C3AED, #118AB2); }
+
+    #backBtn {
+      width: 54px; height: 54px; border-radius: 18px; border: none;
+      background: rgba(255,255,255,0.3); color: white;
+      font-size: 1.8rem; cursor: pointer; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s, transform 0.1s;
+    }
+    #backBtn:active { background: rgba(255,255,255,0.5); transform: scale(0.9); }
+    #backBtn.hidden { visibility: hidden; }
+
+    #appTitle {
+      flex: 1; color: white; font-size: 1.5rem; font-weight: 900;
+      letter-spacing: -0.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+
+    .header-btns { display: flex; gap: 10px; flex-shrink: 0; }
+    .hbtn {
+      width: 50px; height: 50px; border-radius: 16px; border: none;
+      background: rgba(255,255,255,0.25); color: white;
+      font-size: 1.3rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .hbtn:active { background: rgba(255,255,255,0.45); transform: scale(0.88); }
+    #addBtn { background: white; color: var(--blue); font-size: 2rem; font-weight: 900; box-shadow: 0 4px 14px rgba(0,0,0,0.2); }
+    #addBtn.hidden { display: none; }
+
+    .adult-bar { background: var(--purple); color: white; text-align: center; font-size: 0.85rem; font-weight: 800; padding: 7px; letter-spacing: 0.5px; display: none; }
+    .adult-bar.show { display: block; }
+
+    /* ── GRID ── */
+    #grid {
+      flex: 1; overflow-y: auto;
+      padding: 16px 14px 10px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px; align-content: start;
+    }
+    #grid::-webkit-scrollbar { width: 3px; }
+    #grid::-webkit-scrollbar-thumb { background: #ccc; border-radius: 2px; }
+
+    /* ── CARDS ── */
+    .card {
+      background: white; border-radius: 26px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.10);
+      overflow: hidden; cursor: pointer;
+      position: relative; border: 4px solid transparent;
+      transition: transform 0.12s, box-shadow 0.12s;
+      display: flex; flex-direction: column;
+      min-height: 180px;
+    }
+    .card:active { transform: scale(0.93); box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .card.playing { animation: pop 0.4s ease; }
+    @keyframes pop { 35% { transform: scale(1.07); } }
+
+    .card-visual {
+      flex: 1; width: 100%;
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden; min-height: 130px;
+    }
+    .card-visual img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .big-emoji { font-size: 4.5rem; line-height: 1; }
+    .card.folder .card-visual { background: #F0F8FF; }
+
+    .card-label {
+      padding: 10px 10px 13px; font-weight: 900;
+      font-size: 1.15rem; text-align: center; line-height: 1.2;
+      background: white; color: var(--text);
+    }
+
+    /* Folder arrow only - no text badge */
+    .folder-arrow {
+      position: absolute; bottom: 44px; right: 10px;
+      font-size: 1rem; color: #ccc;
+    }
+    .audio-badge {
+      position: absolute; top: 8px; left: 8px;
+      background: rgba(6,214,160,0.2); color: #07a07a;
+      border-radius: 10px; padding: 3px 9px; font-size: 0.72rem; font-weight: 900;
+    }
+
+    /* Delete */
+    .card-del {
+      position: absolute; top: 8px; right: 8px;
+      width: 36px; height: 36px; border-radius: 50%;
+      background: var(--red); color: white; border: none;
+      font-size: 1.1rem; font-weight: 900; cursor: pointer;
+      align-items: center; justify-content: center;
+      box-shadow: 0 2px 8px rgba(239,71,111,0.4);
+      display: none; z-index: 5;
+    }
+    body.adult .card-del { display: flex; }
+
+    /* Vibrant card colors */
+    .c0 { border-color: #FFD166; } .c0 .card-visual { background: #FFFBEC; }
+    .c1 { border-color: #06D6A0; } .c1 .card-visual { background: #EDFAF6; }
+    .c2 { border-color: #118AB2; } .c2 .card-visual { background: #E8F4FA; }
+    .c3 { border-color: #EF476F; } .c3 .card-visual { background: #FEF0F3; }
+    .c4 { border-color: #A855F7; } .c4 .card-visual { background: #F5EEFF; }
+    .c5 { border-color: #FB923C; } .c5 .card-visual { background: #FFF4ED; }
+
+    /* ── EMPTY ── */
+    #empty { grid-column:1/-1; text-align:center; padding:52px 20px; color:#bbb; display:none; }
+    #empty .ei { font-size:4rem; margin-bottom:12px; }
+    #empty h2  { font-size:1.3rem; font-weight:900; color:#aaa; margin-bottom:8px; }
+    #empty p   { font-size:1rem; line-height:1.6; font-weight:700; }
+
+    /* ── YES/NO ── */
+    footer {
+      flex-shrink:0; display:grid; grid-template-columns:1fr 1fr;
+      gap:12px; padding:12px 14px 18px; background: #F0F4FF;
+    }
+    .yn {
+      border:none; border-radius:24px; padding:22px 10px;
+      font-family:'Nunito',sans-serif; font-size:2.8rem; font-weight:900;
+      cursor:pointer; transition:transform 0.1s, filter 0.1s;
+      display:flex; align-items:center; justify-content:center;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    }
+    .yn:active { transform:scale(0.9); filter:brightness(0.9); }
+    #yesBtn { background: #06D6A0; box-shadow: 0 6px 24px rgba(6,214,160,.45); }
+    #noBtn  { background: #EF476F; box-shadow: 0 6px 24px rgba(239,71,111,.45); }
+
+    /* ── OVERLAYS ── */
+    .overlay { position:fixed; inset:0; background:rgba(0,0,0,.55); display:flex; align-items:flex-end; z-index:100; opacity:0; pointer-events:none; transition:opacity .25s; }
+    .overlay.open { opacity:1; pointer-events:all; }
+    .modal { width:100%; background:white; border-radius:30px 30px 0 0; padding:22px 20px 46px; transform:translateY(100%); transition:transform .3s cubic-bezier(.34,1.4,.64,1); max-height:92dvh; overflow-y:auto; }
+    .overlay.open .modal { transform:translateY(0); }
+    .mhandle { width:44px; height:5px; background:#ddd; border-radius:3px; margin:0 auto 20px; }
+    .modal h2 { font-size:1.4rem; font-weight:900; text-align:center; margin-bottom:8px; }
+    .modal .msub { font-size:.9rem; color:#aaa; font-weight:700; text-align:center; margin-bottom:20px; }
+
+    /* CONFIRM */
+    #confirmOverlay { align-items:center; justify-content:center; }
+    #confirmOverlay .modal { width:calc(100% - 48px); max-width:320px; border-radius:26px; padding:28px 24px 24px; }
+    #confirmMsg { font-size:1rem; color:#555; font-weight:700; text-align:center; margin-bottom:24px; line-height:1.5; }
+    .confirm-btns { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .confirm-btns button { border:none; border-radius:16px; padding:16px 10px; font-family:'Nunito',sans-serif; font-size:1.05rem; font-weight:800; cursor:pointer; transition:transform .1s; }
+    .confirm-btns button:active { transform:scale(0.94); }
+    #confirmNo  { background:#f0f0f0; color:#666; }
+    #confirmYes { background:var(--red); color:white; }
+
+    /* PIN */
+    #pinOverlay { align-items:center; justify-content:center; }
+    #pinOverlay .modal { width:calc(100% - 40px); max-width:340px; border-radius:30px; padding:28px 24px 34px; }
+    .pin-display { display:flex; gap:16px; justify-content:center; margin:20px 0 26px; }
+    .pin-dot { width:20px; height:20px; border-radius:50%; border:3px solid #ddd; background:transparent; transition:background .15s, border-color .15s; }
+    .pin-dot.filled { background:var(--purple); border-color:var(--purple); }
+    .pin-dot.error  { background:var(--red); border-color:var(--red); animation:shake .3s ease; }
+    @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-7px)} 75%{transform:translateX(7px)} }
+    .numpad { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; max-width:290px; margin:0 auto; }
+    .numpad-btn { height:70px; border-radius:18px; border:none; background:#f4f4f4; font-family:'Nunito',sans-serif; font-size:1.6rem; font-weight:800; color:var(--text); cursor:pointer; transition:background .1s, transform .1s; display:flex; align-items:center; justify-content:center; }
+    .numpad-btn:active { background:#e0e0e0; transform:scale(0.92); }
+    .numpad-btn.del-btn { background:#FFF0F0; color:var(--red); }
+    .numpad-btn.empty { background:transparent; pointer-events:none; }
+    .pin-error-msg { text-align:center; color:var(--red); font-weight:800; font-size:.95rem; margin-top:14px; min-height:1.3em; }
+    .pin-hint { font-size:.8rem; color:#aaa; font-weight:700; text-align:center; margin-top:10px; }
+    .change-pin-area { display:none; flex-direction:column; gap:10px; width:100%; margin-top:10px; }
+    .change-pin-area.show { display:flex; }
+    .change-pin-area input { border:3px solid #eee; border-radius:16px; padding:14px 16px; font-family:'Nunito',sans-serif; font-size:1.1rem; font-weight:700; outline:none; text-align:center; letter-spacing:8px; transition:border-color .2s; width:100%; }
+    .change-pin-area input:focus { border-color:var(--purple); }
+    .cps-title { font-weight:800; font-size:.95rem; color:#666; text-align:center; margin-top:8px; }
+
+    /* ADD MODAL */
+    .step { display:none; flex-direction:column; align-items:center; gap:16px; }
+    .step.active { display:flex; }
+    .step-hint { font-size:.8rem; font-weight:700; color:#aaa; text-transform:uppercase; letter-spacing:1px; }
+    .type-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; width:100%; max-width:320px; }
+    .type-card { border:3px solid #eee; border-radius:22px; padding:22px 10px; background:white; cursor:pointer; font-family:'Nunito',sans-serif; text-align:center; transition:border-color .15s, background .15s; }
+    .type-card:active { background:#f8f8f8; }
+    .type-card .ti { font-size:2.8rem; display:block; margin-bottom:8px; }
+    .type-card .tl { font-size:1.05rem; font-weight:900; display:block; }
+    .type-card .ts { font-size:.75rem; color:#bbb; font-weight:700; }
+    .photo-tap { width:170px; height:170px; border-radius:22px; border:3px dashed #ddd; cursor:pointer; display:flex; align-items:center; justify-content:center; overflow:hidden; background:#fafafa; transition:border-color .2s; }
+    .photo-tap:active { border-color:var(--blue); }
+    .photo-tap img { width:100%; height:100%; object-fit:cover; }
+    .pt-hint { text-align:center; color:#ccc; }
+    .pt-hint span { font-size:2.2rem; display:block; }
+    .pt-hint small { font-size:.82rem; font-weight:700; }
+    .emoji-row { display:flex; gap:10px; overflow-x:auto; padding:6px 4px 10px; -webkit-overflow-scrolling:touch; width:100%; max-width:340px; }
+    .emoji-row::-webkit-scrollbar { display:none; }
+    .eopt { width:58px; height:58px; border-radius:16px; border:2px solid #eee; background:white; font-size:1.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:border-color .15s; }
+    .eopt.sel { border-color:var(--blue); background:#EFF8FF; }
+    input[type="text"] { width:100%; max-width:320px; border:3px solid #eee; border-radius:16px; padding:14px 16px; font-family:'Nunito',sans-serif; font-size:1.1rem; font-weight:700; outline:none; transition:border-color .2s; }
+    input[type="text"]:focus { border-color:var(--blue); }
+    #fileInput, #audioFileInput { display:none; }
+    .mbtn { width:100%; max-width:320px; border:none; border-radius:18px; padding:17px 20px; font-family:'Nunito',sans-serif; font-size:1.05rem; font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; transition:transform .1s, filter .1s; }
+    .mbtn:active { transform:scale(.95); filter:brightness(.9); }
+    .mb-blue{background:var(--blue);color:white} .mb-green{background:var(--green);color:white}
+    .mb-red{background:var(--red);color:white}   .mb-purple{background:var(--purple);color:white}
+    .mb-dark{background:#444;color:white}         .mb-gray{background:#f0f0f0;color:#666}
+    .mb-lavender{background:#F5F0FF;color:var(--purple)}
+    .rec-wrap { display:flex; flex-direction:column; align-items:center; gap:12px; }
+    .rec-ind { display:flex; align-items:center; gap:8px; font-weight:800; font-size:1rem; color:var(--red); }
+    .rec-dot { width:13px; height:13px; border-radius:50%; background:var(--red); animation:blink .8s infinite; }
+    @keyframes blink { 50%{opacity:0} }
+    .audio-mini { width:130px; height:130px; border-radius:18px; overflow:hidden; background:#f0f0f0; }
+    .audio-mini img { width:100%; height:100%; object-fit:cover; }
+    audio { width:100%; max-width:320px; }
+    .or-divider { font-size:.82rem; font-weight:700; color:#ccc; letter-spacing:.5px; }
+
+    /* TOAST */
+    .toast { position:fixed; top:80px; left:50%; transform:translateX(-50%) translateY(-16px); background:#1A1A2E; color:white; padding:11px 24px; border-radius:30px; font-weight:700; font-size:.95rem; z-index:999; opacity:0; pointer-events:none; transition:opacity .22s, transform .22s; white-space:nowrap; }
+    .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+<div id="app">
+  <header id="header">
+    <button id="backBtn" class="hidden">←</button>
+    <div id="appTitle">🗣️ Bildstöd</div>
+    <div class="header-btns">
+      <button class="hbtn" id="lockBtn">🔒</button>
+      <button class="hbtn hidden" id="addBtn">＋</button>
+    </div>
+  </header>
+  <div class="adult-bar" id="adultBar">🔓 VUXENLÄGE — tryck 🔓 för att låsa</div>
+
+  <div id="grid">
+    <div id="empty">
+      <div class="ei">🌟</div>
+      <h2>Välkommen!</h2>
+      <p>Lås upp vuxenläget (🔒)<br>för att lägga till kort.</p>
+    </div>
+  </div>
+
+  <footer>
+    <button class="yn" id="yesBtn">👍</button>
+    <button class="yn" id="noBtn">👎</button>
+  </footer>
+</div>
+
+<!-- CONFIRM -->
+<div class="overlay" id="confirmOverlay">
+  <div class="modal">
+    <div class="mhandle"></div>
+    <h2>Ta bort?</h2>
+    <div id="confirmMsg"></div>
+    <div class="confirm-btns">
+      <button id="confirmNo">Avbryt</button>
+      <button id="confirmYes">🗑️ Ta bort</button>
+    </div>
+  </div>
+</div>
+
+<!-- PIN -->
+<div class="overlay" id="pinOverlay">
+  <div class="modal">
+    <div class="mhandle"></div>
+    <h2 id="pinTitle">🔒 Vuxenläge</h2>
+    <div class="msub" id="pinSubtitle">Ange PIN-kod</div>
+    <div class="pin-display" id="pinDisplay">
+      <div class="pin-dot" id="d0"></div><div class="pin-dot" id="d1"></div>
+      <div class="pin-dot" id="d2"></div><div class="pin-dot" id="d3"></div>
+    </div>
+    <div class="numpad" id="theNumpad">
+      <button class="numpad-btn" data-n="1">1</button>
+      <button class="numpad-btn" data-n="2">2</button>
+      <button class="numpad-btn" data-n="3">3</button>
+      <button class="numpad-btn" data-n="4">4</button>
+      <button class="numpad-btn" data-n="5">5</button>
+      <button class="numpad-btn" data-n="6">6</button>
+      <button class="numpad-btn" data-n="7">7</button>
+      <button class="numpad-btn" data-n="8">8</button>
+      <button class="numpad-btn" data-n="9">9</button>
+      <button class="numpad-btn empty"></button>
+      <button class="numpad-btn" data-n="0">0</button>
+      <button class="numpad-btn del-btn" id="pinDel">⌫</button>
+    </div>
+    <div class="pin-error-msg" id="pinError"></div>
+    <div class="pin-hint" id="pinHint">Standard PIN: 1234</div>
+    <div class="change-pin-area" id="changePinArea">
+      <div class="cps-title">— Byt PIN-kod —</div>
+      <input type="number" id="newPin1" placeholder="Ny PIN (4 siffror)" maxlength="4">
+      <input type="number" id="newPin2" placeholder="Upprepa PIN" maxlength="4">
+      <button class="mbtn mb-purple" id="savePinBtn">Spara ny PIN-kod</button>
+      <button class="mbtn mb-red" id="lockNowBtn">🔒 Lås vuxenläge</button>
+    </div>
+    <button class="mbtn mb-gray" style="margin-top:16px;max-width:280px" id="pinCancel">Avbryt</button>
+  </div>
+</div>
+
+<!-- ADD -->
+<div class="overlay" id="addOverlay">
+  <div class="modal">
+    <div class="mhandle"></div>
+    <h2 id="mTitle">Lägg till</h2>
+    <div class="step active" id="s0">
+      <span class="step-hint">Vad vill du lägga till?</span>
+      <div class="type-row">
+        <button class="type-card" id="chooseFolder"><span class="ti">📁</span><span class="tl">Kategori</span><span class="ts">Öppnar fler bilder</span></button>
+        <button class="type-card" id="chooseCard"><span class="ti">🖼️</span><span class="tl">Bildkort</span><span class="ts">Spelar upp ljud</span></button>
+      </div>
+      <button class="mbtn mb-gray" id="s0Cancel">✕ Avbryt</button>
+    </div>
+    <div class="step" id="sF">
+      <span class="step-hint">Kategori</span>
+      <div class="photo-tap" id="fPhotoArea"><div class="pt-hint"><span>📷</span><small>Bild (valfritt)</small></div></div>
+      <div style="width:100%;max-width:340px">
+        <input type="text" id="emojiSearch" placeholder="🔍 Sök emoji…" maxlength="30" style="margin-bottom:8px;border-color:#eee">
+        <div class="emoji-row" id="emojiRow"></div>
+        <div style="font-size:.75rem;color:#bbb;font-weight:700;text-align:center;margin-top:-6px">← Svep för fler →</div>
+      </div>
+      <input type="text" id="fName" placeholder="Kategorinamn…" maxlength="20">
+      <button class="mbtn mb-green" id="saveFolder">💾 Spara kategori</button>
+      <button class="mbtn mb-gray" id="fBack">← Tillbaka</button>
+    </div>
+    <div class="step" id="sC1">
+      <span class="step-hint">Steg 1 – Bild och namn</span>
+      <div class="photo-tap" id="cPhotoArea"><div class="pt-hint"><span>📷</span><small>Tryck för att ta bild</small></div></div>
+      <input type="text" id="cName" placeholder="Vad heter det?" maxlength="20">
+      <button class="mbtn mb-blue" id="goAudio">Nästa: Spela in ljud →</button>
+      <button class="mbtn mb-gray" id="c1Back">← Tillbaka</button>
+    </div>
+    <div class="step" id="sC2">
+      <span class="step-hint">Steg 2 – Ljud (valfritt)</span>
+      <div class="audio-mini" id="aMini"></div>
+      <div id="recIdle" style="display:flex;flex-direction:column;align-items:center;gap:12px;width:100%;max-width:320px">
+        <button class="mbtn mb-red" id="recordBtn">🎙️ Spela in direkt</button>
+        <span class="or-divider">— ELLER —</span>
+        <button class="mbtn mb-lavender" id="uploadAudioBtn">📂 Välj ljudfil (Röstmemon)</button>
+        <div style="font-size:.78rem;color:#bbb;font-weight:700;text-align:center;line-height:1.5">Spela in i Röstmemon → dela → Spara i Filer → välj här</div>
+      </div>
+      <div id="recActive" style="display:none">
+        <div class="rec-wrap">
+          <div class="rec-ind"><div class="rec-dot"></div>Spelar in…</div>
+          <button class="mbtn mb-dark" id="stopBtn">⏹ Stoppa inspelning</button>
+        </div>
+      </div>
+      <audio id="audPrev" controls style="display:none"></audio>
+      <input type="file" id="audioFileInput" accept="audio/*">
+      <button class="mbtn mb-green" id="saveCard">💾 Spara bildkortet</button>
+      <button class="mbtn mb-gray" id="skipAudio">Hoppa över ljud</button>
+      <button class="mbtn mb-gray" id="c2Back">← Tillbaka</button>
+    </div>
+    <input type="file" id="fileInput" accept="image/*">
+  </div>
+</div>
+
+<div class="toast" id="toastEl"></div>
+
+<script>
+// ── DB ──
+let db;
+function openDB(){
+  return new Promise((res,rej)=>{
+    const r=indexedDB.open('BildstodV3',1);
+    r.onupgradeneeded=e=>{ if(!e.target.result.objectStoreNames.contains('nodes')) e.target.result.createObjectStore('nodes',{keyPath:'id',autoIncrement:true}); };
+    r.onsuccess=e=>{db=e.target.result;res();};
+    r.onerror=e=>rej(e.target.error);
+  });
+}
+const txS=m=>db.transaction('nodes',m||'readonly').objectStore('nodes');
+const dbAll=()=>db?new Promise((res,rej)=>{const r=txS().getAll();r.onsuccess=e=>res(e.target.result);r.onerror=rej;}):Promise.resolve([]);
+const dbAdd=n=>db?new Promise((res,rej)=>{const r=txS('readwrite').add(n);r.onsuccess=e=>res(e.target.result);r.onerror=rej;}):Promise.resolve(Math.random());
+const dbDel=id=>db?new Promise((res,rej)=>{const t=db.transaction('nodes','readwrite');t.objectStore('nodes').delete(id);t.oncomplete=res;t.onerror=rej;}):Promise.resolve();
+
+// ── Confirm ──
+let confirmResolve=null;
+const confirmOverlay=document.getElementById('confirmOverlay');
+function customConfirm(msg){
+  return new Promise(resolve=>{
+    confirmResolve=resolve;
+    document.getElementById('confirmMsg').textContent=msg;
+    confirmOverlay.classList.add('open');
+  });
+}
+document.getElementById('confirmYes').addEventListener('click',()=>{ confirmOverlay.classList.remove('open'); if(confirmResolve){confirmResolve(true);confirmResolve=null;} });
+document.getElementById('confirmNo').addEventListener('click',()=>{ confirmOverlay.classList.remove('open'); if(confirmResolve){confirmResolve(false);confirmResolve=null;} });
+confirmOverlay.addEventListener('click',e=>{ if(e.target===confirmOverlay){confirmOverlay.classList.remove('open');if(confirmResolve){confirmResolve(false);confirmResolve=null;}} });
+
+// ── PIN ──
+const PIN_KEY='bildstod_pin';
+const getPin=()=>localStorage.getItem(PIN_KEY)||'1234';
+const setPin=p=>localStorage.setItem(PIN_KEY,p);
+let isAdult=false, pinBuffer='';
+
+function setAdult(val){
+  isAdult=val;
+  document.body.classList.toggle('adult',val);
+  document.getElementById('header').classList.toggle('adult-mode',val);
+  document.getElementById('adultBar').classList.toggle('show',val);
+  document.getElementById('lockBtn').textContent=val?'🔓':'🔒';
+  document.getElementById('addBtn').classList.toggle('hidden',!val);
+  render();
+}
+
+const pinOverlay=document.getElementById('pinOverlay');
+function openPinModal(isMenu){
+  pinBuffer='';
+  const show=isMenu&&isAdult;
+  document.getElementById('pinTitle').textContent=show?'🔓 Vuxenläge aktivt':'🔒 Vuxenläge';
+  document.getElementById('pinSubtitle').textContent=show?'':'Ange PIN-kod';
+  document.getElementById('pinError').textContent='';
+  document.getElementById('pinHint').style.display=show?'none':'';
+  document.getElementById('pinDisplay').style.display=show?'none':'';
+  document.getElementById('theNumpad').style.display=show?'none':'';
+  document.getElementById('changePinArea').classList.toggle('show',show);
+  document.getElementById('newPin1').value='';
+  document.getElementById('newPin2').value='';
+  updateDots();
+  pinOverlay.classList.add('open');
+}
+function closePinModal(){
+  pinOverlay.classList.remove('open'); pinBuffer='';
+  document.getElementById('pinDisplay').style.display='';
+  document.getElementById('theNumpad').style.display='';
+  document.getElementById('changePinArea').classList.remove('show');
+}
+function updateDots(){ for(let i=0;i<4;i++){const d=document.getElementById('d'+i);d.classList.remove('filled','error');if(i<pinBuffer.length)d.classList.add('filled');} }
+function showPinError(){ for(let i=0;i<4;i++)document.getElementById('d'+i).classList.add('error'); document.getElementById('pinError').textContent='Fel PIN-kod, försök igen'; setTimeout(()=>{pinBuffer='';updateDots();document.getElementById('pinError').textContent='';},900); }
+
+document.querySelectorAll('.numpad-btn[data-n]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    if(pinBuffer.length>=4)return;
+    pinBuffer+=btn.dataset.n; updateDots();
+    if(pinBuffer.length===4) setTimeout(()=>{ if(pinBuffer===getPin()){closePinModal();setAdult(true);toast('Vuxenläge aktiverat 🔓');}else showPinError(); },120);
+  });
+});
+document.getElementById('pinDel').addEventListener('click',()=>{pinBuffer=pinBuffer.slice(0,-1);updateDots();document.getElementById('pinError').textContent='';});
+document.getElementById('pinCancel').addEventListener('click',closePinModal);
+document.getElementById('lockNowBtn').addEventListener('click',()=>{closePinModal();setAdult(false);toast('Låst 🔒');});
+pinOverlay.addEventListener('click',e=>{if(e.target===pinOverlay)closePinModal();});
+document.getElementById('lockBtn').addEventListener('click',()=>openPinModal(isAdult));
+document.getElementById('savePinBtn').addEventListener('click',()=>{
+  const p1=String(document.getElementById('newPin1').value).trim();
+  const p2=String(document.getElementById('newPin2').value).trim();
+  if(!/^\d{4}$/.test(p1)){toast('PIN måste vara 4 siffror!');return;}
+  if(p1!==p2){toast('PIN-koderna matchar inte!');return;}
+  setPin(p1);toast('PIN-kod ändrad! ✅');
+  document.getElementById('newPin1').value='';document.getElementById('newPin2').value='';
+});
+
+// ── State ──
+let all=[], nav=[], curAudio=null;
+const pid=()=>nav.length?nav[nav.length-1].id:null;
+const kids=p=>all.filter(n=>(n.parentId??null)===(p??null));
+const COLORS=['c0','c1','c2','c3','c4','c5'];
+// Emoji data: [emoji, keywords...]
+const EMOJI_DATA = [
+  ['🏠','hemma','hus','hem'],['🏫','skola','klassrum'],['😊','glad','lycklig','nöjd'],['🚽','toalett','bajsa','kiss','wc','toa'],
+  ['🍽️','mat','äta','tallrik'],['🌳','träd','natur','skog'],['🎮','spela','spel','gaming'],['📚','böcker','läsa','studera'],
+  ['🎨','måla','konst','rita'],['🚗','bil','köra','åka'],['💊','medicin','tablett','piller'],['🛁','bada','badkar'],
+  ['🐶','hund','valp'],['🎵','musik','sjunga','sång'],['⚽','fotboll','sparka','boll'],['🌈','regnbåge','färger'],
+  ['🧸','nalle','leksak','björn'],['🍎','äpple','frukt'],['😴','sova','trött','sömnig','natt'],['😢','ledsen','gråter','arg','trist'],
+  ['😡','arg','ilsken','sur'],['😂','skratta','roligt','kul'],['❤️','kärlek','hjärta','älska'],['⭐','stjärna','bra','guld'],
+  ['🌙','natt','måne','sova'],['☀️','sol','soligt','varmt','dag'],['🌧️','regn','regnig','väder'],['❄️','snö','vinter','kallt','is'],
+  ['🔥','eld','varmt','brand'],['🎂','tårta','födelsedag','kaka'],['🍕','pizza','mat'],['🍔','hamburgare','mat'],
+  ['🍜','nudlar','soppa','mat'],['🥛','mjölk','dricka'],['🧃','juice','dricka','saft'],['🍌','banan','frukt'],
+  ['🍓','jordgubbe','frukt','bär'],['🥕','morot','grönsak'],['🧁','muffins','kaka','söt'],['🍦','glass','söt','kall'],
+  ['🐱','katt','morrande'],['🐰','kanin','hare'],['🐸','groda','grön'],['🦁','lejon','djur'],['🐘','elefant','stor','grå'],
+  ['🦋','fjäril','insekt','vacker'],['🐟','fisk','hav','simma'],['🦄','enhörning','magisk'],['🐔','höna','fågel'],['🐺','varg','djur'],
+  ['👕','tröja','kläder'],['👟','sko','kläder','springa'],['🎒','ryggsäck','skola','väska'],['🛏️','säng','sova','vila'],
+  ['🪥','tandborste','tänder','borsta'],['🧴','tvål','tvätta','hygien'],['🚿','duscha','tvätta','hygien'],['🪞','spegel','titta'],
+  ['🚪','dörr','öppna','stäng'],['🛋️','soffa','sitta','vila'],['✏️','penna','skriva','rita'],['📏','linjal','mäta','skola'],
+  ['🖍️','krita','färg','rita'],['📐','vinkelhake','skola','mäta'],['🔔','klocka','ringa','ljud'],['📱','telefon','mobil'],
+  ['💻','dator','skriva'],['🎸','gitarr','musik'],['🥁','trummor','musik'],['🎹','piano','musik'],['🚌','buss','åka','resa'],
+  ['🚲','cykel','cykla','åka'],['✈️','flygplan','resa','flyga'],['🚑','ambulans','sjukhus','hjälp'],['🏥','sjukhus','doktor','sjuk'],
+  ['🏪','affär','handla','butik'],['🌺','blomma','vacker','växt'],['🌻','solros','blomma','gul'],['🍀','klöver','grön','tur'],
+  ['🌵','kaktus','taggig','öken'],['🎄','julgran','jul','grön'],['🏖️','strand','hav','sommar','sol'],['🏔️','berg','natur','högt'],
+  ['🎡','pariserhjul','nöjesfält','rolig'],['🏊','simma','pool','vatten'],['🚴','cykla','sport'],['🏋️','gym','träning','stark'],
+  ['🤸','gymnastik','sport','röra sig'],['💪','stark','muskel','bra'],['👋','hej','vinka','hälsa'],['🙏','snälla','tack','be'],
+  ['👀','se','titta','ögon'],['💤','sova','trött','vila'],['🤒','sjuk','feber','kall'],['🩹','plåster','sår','ont'],
+  ['💉','spruta','vaccination','sjuk'],['🩺','läkare','doktor','undersökning'],['🧩','pussel','spel','leka'],['🎯','mål','prick'],
+  ['🏆','vinna','trofé','bäst','mästare'],['🥇','guld','vinna','bäst'],['🎁','present','gåva','födelsedag'],['🎉','fest','fira','kul'],
+  ['🎈','ballong','fest','fira'],['🔑','nyckel','öppna','lås'],['🪴','krukväxt','blomma','inne'],['🧺','korg','tvätt'],
+  ['🧹','sopborste','städa','rent'],['🍳','steka','laga mat','pannkaka'],['☕','kaffe','varmt','dricka'],
+  ['🥱','gäspa','trött','uttråkad'],['🤗','kram','glad','varm'],['😰','nervös','rädd','svettig'],['🤔','fundera','tänka'],
+  ['🤢','illamående','spy','sjuk'],['😱','rädd','chockad','skrämd'],['🥳','fira','fest','glad'],['😎','cool','solglasögon'],
+  ['🤓','nördig','glasögon','smart'],['😇','snäll','ängel'],['🥰','kärlek','söt','glad'],['😤','frusterad','arg','fnys'],
+  ['🙄','trött','ögon','trist'],['😶','tyst','mun','ingen'],['🤐','tyst','mun','prata inte'],['😬','nervös','konstigt'],
+  ['🤧','nysning','förkyld','sjuk'],['🤮','spy','illamående','sjuk'],['🥵','varm','het','svett'],['🥶','kall','frys','frusen'],
+  ['🫁','lungor','andas'],['🧠','hjärna','tänka','smart'],['🦷','tand','tänder'],['👁️','öga','se','titta'],
+  ['👃','näsa','lukta'],['👅','tunga','smaka'],['🤲','händer','hålla'],['🫶','hjärta','händer','kärlek'],
+  ['🙌','klappar','bra','hurra'],['👏','klappa','bra','applåd'],['✌️','fred','seger','två'],
+  ['🎓','student','examen','skola'],['🏡','hus','hem','trädgård'],['🌡️','termometer','feber','temperatur'],
+];
+
+function buildEmojis(filter=''){
+  const row=document.getElementById('emojiRow');
+  row.innerHTML='';
+  const q=filter.toLowerCase().trim();
+  const filtered=q
+    ? EMOJI_DATA.filter(d=>d.slice(1).some(k=>k.includes(q)))
+    : EMOJI_DATA;
+  if(filtered.length===0){
+    const msg=document.createElement('div');
+    msg.style.cssText='color:#bbb;font-weight:700;font-size:.9rem;padding:16px 10px;white-space:nowrap';
+    msg.textContent='Inga emojis hittades';
+    row.appendChild(msg);
+    return;
+  }
+  filtered.forEach(d=>{
+    const em=d[0];
+    const b=document.createElement('button');b.className='eopt';b.textContent=em;
+    if(pEmoji===em) b.classList.add('sel');
+    b.addEventListener('click',()=>{
+      pEmoji=em;
+      row.querySelectorAll('.eopt').forEach(x=>x.classList.remove('sel'));
+      b.classList.add('sel');
+    });
+    row.appendChild(b);
+  });
+}
+
+// Emoji search
+document.getElementById('emojiSearch').addEventListener('input',function(){ buildEmojis(this.value); });
+
+// ── Toast ──
+const toastEl=document.getElementById('toastEl');
+function toast(msg){toastEl.textContent=msg;toastEl.classList.add('show');setTimeout(()=>toastEl.classList.remove('show'),2300);}
+
+// ── Render ──
+const grid=document.getElementById('grid');
+const emptyEl=document.getElementById('empty');
+const appTitle=document.getElementById('appTitle');
+const backBtn=document.getElementById('backBtn');
+
+function render(){
+  grid.querySelectorAll('.card').forEach(c=>c.remove());
+  // Update title to show current level name
+  const current=nav.length?nav[nav.length-1]:null;
+  appTitle.textContent=current?(current.emoji||'📁')+' '+current.name:'🗣️ Bildstöd';
+  backBtn.classList.toggle('hidden',nav.length===0);
+
+  const children=kids(pid());
+  if(!children.length){
+    emptyEl.style.display='';
+    emptyEl.querySelector('h2').textContent=nav.length?'Tomt här inne':'Välkommen!';
+    emptyEl.querySelector('p').innerHTML=(!isAdult&&!all.length)
+      ?'Lås upp vuxenläget (🔒)<br>för att lägga till kort.'
+      :(isAdult?'Tryck <strong>+</strong> för att lägga till.':'');
+    return;
+  }
+  emptyEl.style.display='none';
+
+  children.forEach(node=>{
+    const isF=node.type==='folder';
+    const el=document.createElement('div');
+    el.className=`card ${COLORS[(node.id||0)%6]}${isF?' folder':''}`;
+
+    const vis=document.createElement('div'); vis.className='card-visual';
+    if(node.imageData){ const img=document.createElement('img');img.src=node.imageData;img.alt=node.name;vis.appendChild(img); }
+    else { const em=document.createElement('div');em.className='big-emoji';em.textContent=node.emoji||(isF?'📁':'🖼️');vis.appendChild(em); }
+    el.appendChild(vis);
+
+    const lbl=document.createElement('div');lbl.className='card-label';lbl.textContent=node.name||'…';el.appendChild(lbl);
+
+    if(isF){ const arr=document.createElement('div');arr.className='folder-arrow';arr.textContent='▶';el.appendChild(arr); }
+    else if(node.audioData){ const b=document.createElement('div');b.className='audio-badge';b.textContent='🔊';el.appendChild(b); }
+
+    const del=document.createElement('button');del.className='card-del';del.textContent='✕';
+    del.addEventListener('click',async e=>{
+      e.stopPropagation();e.preventDefault();
+      if(!isAdult)return;
+      const count=isF?all.filter(n=>n.parentId===node.id).length:0;
+      const msg=isF&&count>0?`Ta bort "${node.name}" och allt inuti (${count} objekt)?`:`Ta bort "${node.name}"?`;
+      const ok=await customConfirm(msg);
+      if(ok){await delRecursive(node.id);render();toast('Borttaget 🗑️');}
+    });
+    el.appendChild(del);
+
+    el.addEventListener('click',()=>{
+      if(isF){nav.push({id:node.id,name:node.name,emoji:node.emoji});render();}
+      else playCard(node,el);
+    });
+    grid.appendChild(el);
+  });
+}
+
+function playCard(node,el){
+  if(curAudio){curAudio.pause();curAudio=null;}
+  el.classList.add('playing');setTimeout(()=>el.classList.remove('playing'),420);
+  if(node.audioData){const a=new Audio(node.audioData);curAudio=a;a.play().catch(()=>toast('Kunde inte spela ljud'));}
+  else if('speechSynthesis' in window&&node.name){const u=new SpeechSynthesisUtterance(node.name);u.lang='sv-SE';u.rate=0.85;u.pitch=1.1;speechSynthesis.speak(u);}
+  else toast('Inget ljud inspelat 🔇');
+}
+
+async function delRecursive(id){
+  for(const c of all.filter(n=>n.parentId===id))await delRecursive(c.id);
+  await dbDel(id);all=all.filter(n=>n.id!==id);
+}
+
+backBtn.addEventListener('click',()=>{nav.pop();render();});
+document.getElementById('yesBtn').addEventListener('click',()=>speak('Ja'));
+document.getElementById('noBtn').addEventListener('click',()=>speak('Nej'));
+function speak(w){if(!('speechSynthesis' in window))return;const u=new SpeechSynthesisUtterance(w);u.lang='sv-SE';u.rate=0.85;speechSynthesis.speak(u);}
+
+// ── Add ──
+const addOverlay=document.getElementById('addOverlay');
+const fileInp=document.getElementById('fileInput');
+const audioFileInp=document.getElementById('audioFileInput');
+let pImg=null,pAudio=null,pEmoji=null,fileTgt=null,mediaRec=null,audioChunks=[];
+const $=id=>document.getElementById(id);
+const stepIds=['s0','sF','sC1','sC2'];
+function showStep(id){stepIds.forEach(s=>$(s).classList.remove('active'));$(id).classList.add('active');}
+function openAddModal(){if(!isAdult)return;resetAdd();addOverlay.classList.add('open');}
+function closeAddModal(){addOverlay.classList.remove('open');stopRec();}
+function resetAdd(){
+  pImg=null;pAudio=null;pEmoji=null;fileTgt=null;
+  $('fName').value='';$('cName').value='';
+  $('fPhotoArea').innerHTML='<div class="pt-hint"><span>📷</span><small>Bild (valfritt)</small></div>';
+  $('cPhotoArea').innerHTML='<div class="pt-hint"><span>📷</span><small>Tryck för att ta bild</small></div>';
+  $('aMini').innerHTML='';$('audPrev').style.display='none';$('audPrev').src='';
+  $('recIdle').style.display='';$('recActive').style.display='none';
+  $('recordBtn').textContent='🎙️ Spela in direkt';
+  fileInp.value='';audioFileInp.value='';
+  const es=document.getElementById('emojiSearch');if(es)es.value='';
+  buildEmojis();showStep('s0');$('mTitle').textContent='Lägg till';
+}
+$('addBtn').addEventListener('click',openAddModal);
+addOverlay.addEventListener('click',e=>{if(e.target===addOverlay)closeAddModal();});
+$('s0Cancel').addEventListener('click',closeAddModal);
+$('chooseFolder').addEventListener('click',()=>{showStep('sF');$('mTitle').textContent='Ny kategori';});
+$('chooseCard').addEventListener('click',()=>{showStep('sC1');$('mTitle').textContent='Nytt bildkort';});
+$('fBack').addEventListener('click',()=>{showStep('s0');$('mTitle').textContent='Lägg till';});
+$('c1Back').addEventListener('click',()=>{showStep('s0');$('mTitle').textContent='Lägg till';});
+$('c2Back').addEventListener('click',()=>{pAudio=null;$('audPrev').style.display='none';$('recIdle').style.display='';showStep('sC1');$('mTitle').textContent='Nytt bildkort';});
+
+function setPhotoArea(id,src){const a=$(id);a.innerHTML='';const img=document.createElement('img');img.src=src;a.appendChild(img);}
+$('fPhotoArea').addEventListener('click',()=>{fileTgt='folder';fileInp.removeAttribute('capture');fileInp.click();});
+$('cPhotoArea').addEventListener('click',()=>{fileTgt='card';fileInp.setAttribute('capture','environment');fileInp.click();});
+fileInp.addEventListener('change',()=>{
+  const file=fileInp.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const imgEl=new Image();
+    imgEl.onload=()=>{
+      const canvas=document.createElement('canvas');
+      const MAX=600;let w=imgEl.width,h=imgEl.height;
+      if(w>h&&w>MAX){h=h*MAX/w;w=MAX;}else if(h>MAX){w=w*MAX/h;h=MAX;}
+      canvas.width=w;canvas.height=h;canvas.getContext('2d').drawImage(imgEl,0,0,w,h);
+      pImg=canvas.toDataURL('image/jpeg',0.8);
+      if(fileTgt==='folder')setPhotoArea('fPhotoArea',pImg);
+      else{setPhotoArea('cPhotoArea',pImg);updateAMini();}
+    };imgEl.src=e.target.result;
+  };reader.readAsDataURL(file);fileInp.value='';
+});
+function updateAMini(){const m=$('aMini');m.innerHTML='';if(pImg){const i=document.createElement('img');i.src=pImg;m.appendChild(i);}}
+$('uploadAudioBtn').addEventListener('click',()=>audioFileInp.click());
+audioFileInp.addEventListener('change',()=>{
+  const file=audioFileInp.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{pAudio=e.target.result;$('audPrev').src=pAudio;$('audPrev').style.display='block';toast('Ljudfil inläst! ✅');};
+  reader.readAsDataURL(file);audioFileInp.value='';
+});
+$('saveFolder').addEventListener('click',async()=>{
+  try {
+    const nameEl = document.getElementById('fName');
+    const name = nameEl ? nameEl.value.trim() : '';
+    if(!name){ toast('Skriv ett namn! ✏️'); return; }
+    const parentId = pid();
+    const node = { parentId: parentId, type:'folder', name: name, emoji: pEmoji||null, imageData: pImg||null, audioData: null, createdAt: Date.now() };
+    const id = await dbAdd(node);
+    node.id = id;
+    all.push(node);
+    render();
+    closeAddModal();
+    toast('Kategori sparad! 📁');
+  } catch(err) {
+    toast('Fel: ' + err.message);
+  }
+});
+$('goAudio').addEventListener('click',()=>{
+  if(!pImg){toast('Ta en bild först! 📷');return;}
+  if(!$('cName').value.trim()){toast('Skriv ett namn! ✏️');return;}
+  updateAMini();showStep('sC2');$('mTitle').textContent='Spela in ljud';
+});
+$('recordBtn').addEventListener('click',startRec);
+$('stopBtn').addEventListener('click',stopRec);
+async function startRec(){
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    audioChunks=[];const opts=MediaRecorder.isTypeSupported('audio/webm')?{mimeType:'audio/webm'}:{};
+    mediaRec=new MediaRecorder(stream,opts);
+    mediaRec.ondataavailable=e=>{if(e.data.size>0)audioChunks.push(e.data);};
+    mediaRec.onstop=()=>{
+      stream.getTracks().forEach(t=>t.stop());
+      const blob=new Blob(audioChunks,{type:mediaRec.mimeType||'audio/webm'});
+      const r=new FileReader();r.onload=e=>{pAudio=e.target.result;$('audPrev').src=pAudio;$('audPrev').style.display='block';};r.readAsDataURL(blob);
+      $('recActive').style.display='none';$('recIdle').style.display='';$('recordBtn').textContent='🎙️ Spela in igen';
+    };
+    mediaRec.start();$('recIdle').style.display='none';$('recActive').style.display='';
+  }catch{toast('Mikrofonåtkomst nekad 🎙️');}
+}
+function stopRec(){if(mediaRec&&mediaRec.state==='recording')mediaRec.stop();}
+async function saveCard(skip){
+  try {
+    stopRec();
+    const name=$('cName').value.trim();
+    if(!pImg||!name){toast('Bild och namn krävs!');return;}
+    const node={parentId:pid(),type:'card',name,emoji:null,imageData:pImg,audioData:skip?null:(pAudio||null),createdAt:Date.now()};
+    const id=await dbAdd(node);node.id=id;all.push(node);render();closeAddModal();toast('Bildkort sparat! 🎉');
+  } catch(err) {
+    toast('Fel: ' + err.message);
+  }
+}
+$('saveCard').addEventListener('click',()=>saveCard(false));
+$('skipAudio').addEventListener('click',()=>saveCard(true));
+
+// ── Seed ──
+const DEFAULTS=[{name:'Hemma',emoji:'🏠'},{name:'Skola',emoji:'🏫'},{name:'Humör',emoji:'😊'},{name:'Toalett',emoji:'🚽'},{name:'Mat',emoji:'🍽️'}];
+async function seed(){
+  if(all.filter(n=>(n.parentId??null)===null).length>0)return;
+  for(const d of DEFAULTS){const node={parentId:null,type:'folder',name:d.name,emoji:d.emoji,imageData:null,audioData:null,createdAt:Date.now()};const id=await dbAdd(node);node.id=id;all.push(node);}
+}
+
+// ── Inject PWA manifest (helps Android "Lägg till på hemskärmen") ──
+(function(){
+  try {
+    const icon = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%23118AB2'/%3E%3Ctext x='90' y='128' font-size='100' text-anchor='middle'%3E🗣️%3C/text%3E%3C/svg%3E";
+    const manifest = {
+      name: "Bildstöd",
+      short_name: "Bildstöd",
+      start_url: ".",
+      display: "standalone",
+      background_color: "#F0F4FF",
+      theme_color: "#118AB2",
+      icons: [{ src: icon, sizes: "180x180", type: "image/svg+xml" }]
+    };
+    const blob = new Blob([JSON.stringify(manifest)], { type: "application/json" });
+    const link = document.createElement("link");
+    link.rel = "manifest";
+    link.href = URL.createObjectURL(blob);
+    document.head.appendChild(link);
+  } catch(e) { /* ignore */ }
+})();
+
+async function init(){
+  try {
+    await openDB();
+    all = await dbAll();
+    await seed();
+  } catch(e) {
+    // IndexedDB blocked (e.g. Claude app preview) — run in memory-only mode
+    all = [];
+    console.warn('IndexedDB ej tillgänglig, kör utan lagring:', e);
+  }
+  render();
+}
+init();
+</script>
+</body>
+</html>
