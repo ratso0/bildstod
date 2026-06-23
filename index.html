@@ -8,7 +8,8 @@
   <meta name="apple-mobile-web-app-title" content="Bildstöd">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#118AB2">
-  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%23118AB2'/%3E%3Ctext x='90' y='128' font-size='100' text-anchor='middle'%3E🗣️%3C/text%3E%3C/svg%3E">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="manifest" href="manifest.json">
   <title>Bildstöd</title>
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
   <style>
@@ -743,28 +744,8 @@ async function seed(){
   for(const d of DEFAULTS){const node={parentId:null,type:'folder',name:d.name,emoji:d.emoji,imageData:null,audioData:null,createdAt:Date.now()};const id=await dbAdd(node);node.id=id;all.push(node);}
 }
 
-// ── Inject PWA manifest (helps Android "Lägg till på hemskärmen") ──
-(function(){
-  try {
-    const icon = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%23118AB2'/%3E%3Ctext x='90' y='128' font-size='100' text-anchor='middle'%3E🗣️%3C/text%3E%3C/svg%3E";
-    const manifest = {
-      name: "Bildstöd",
-      short_name: "Bildstöd",
-      start_url: ".",
-      display: "standalone",
-      background_color: "#F0F4FF",
-      theme_color: "#118AB2",
-      icons: [{ src: icon, sizes: "180x180", type: "image/svg+xml" }]
-    };
-    const blob = new Blob([JSON.stringify(manifest)], { type: "application/json" });
-    const link = document.createElement("link");
-    link.rel = "manifest";
-    link.href = URL.createObjectURL(blob);
-    document.head.appendChild(link);
-  } catch(e) { /* ignore */ }
-})();
-
 async function init(){
+  if('serviceWorker' in navigator){ try{ navigator.serviceWorker.register('sw.js'); }catch(e){} }
   try {
     await openDB();
     all = await dbAll();
