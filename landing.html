@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bildstöd – Prata med bilder</title>
+<meta name="description" content="Bildstöd är ett gratis AKK-verktyg för barn och tonåringar som kommunicerar med bilder. Egna bildkort med foto och röst. Inget konto, ingen kostnad, ingen reklam.">
+<link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F4F7FF;
+    --ink:#1A1A2E;
+    --muted:#5f6b85;
+    --teal:#12919b;
+    --mint:#3ec9a0;
+    --green:#06D6A0;
+    --pink:#EF476F;
+    --blue:#118AB2;
+    --purple:#7C3AED;
+    --orange:#F4A259;
+    --yellow:#FFD166;
+    --card:#ffffff;
+    --face:#EFF5FB;
+    --stepnum:#43506b;
+    --radius:22px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#12141c;
+      --ink:#eef0f7;
+      --muted:#a3adc4;
+      --teal:#2fb9c4;
+      --card:#1e2230;
+      --face:#28304a;
+      --stepnum:#c6cede;
+    }
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:'Nunito',sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    line-height:1.65;
+    overflow-x:hidden;
+  }
+  h1,h2,h3{font-family:'Baloo 2',cursive;line-height:1.15}
+  a{color:inherit}
+  img{display:block}
+  .wrap{max-width:980px;margin:0 auto;padding:0 22px}
+
+  /* ── Toppbar ── */
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:18px 0}
+  .brand{display:flex;align-items:center;gap:10px;text-decoration:none}
+  .brand img{width:40px;height:40px;border-radius:12px;box-shadow:0 3px 10px rgba(18,145,155,.25)}
+  .brand span{font-family:'Baloo 2';font-weight:800;font-size:1.35rem;letter-spacing:-.3px}
+  .btn{
+    display:inline-block;font-family:'Baloo 2';font-weight:700;text-decoration:none;
+    background:linear-gradient(135deg,var(--teal),var(--mint));color:#fff;
+    padding:12px 26px;border-radius:999px;font-size:1.02rem;
+    box-shadow:0 6px 18px rgba(18,145,155,.35);
+    transition:transform .15s ease, box-shadow .15s ease;
+  }
+  .btn:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(18,145,155,.45)}
+  .btn:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+  .btn.small{padding:9px 20px;font-size:.95rem}
+  .btn.big{padding:16px 38px;font-size:1.18rem}
+
+  /* ── Hero: meningen byggd av bildkort ── */
+  .hero{text-align:center;padding:44px 0 70px;position:relative}
+  /* Svävande dekorkort i bakgrunden */
+  .float-card{
+    position:absolute;font-size:2rem;background:var(--card);
+    border:3px solid var(--c);border-radius:16px;padding:10px 14px;
+    box-shadow:0 8px 20px rgba(26,26,46,.10);opacity:.5;z-index:-1;
+    animation:floaty 6s ease-in-out infinite;animation-delay:var(--fd,0s);
+  }
+  @keyframes floaty{
+    0%,100%{transform:translateY(0) rotate(var(--r,0deg))}
+    50%{transform:translateY(-14px) rotate(var(--r,0deg))}
+  }
+  .fc1{top:8%;left:3%;--c:var(--pink);--r:-8deg;--fd:.3s}
+  .fc2{top:16%;right:4%;--c:var(--purple);--r:7deg;--fd:1.2s}
+  .fc3{bottom:12%;left:7%;--c:var(--yellow);--r:5deg;--fd:2s}
+  .fc4{bottom:20%;right:8%;--c:var(--green);--r:-5deg;--fd:.8s}
+  @media(max-width:760px){.float-card{display:none}}
+  .card-sentence{
+    display:flex;justify-content:center;align-items:flex-end;gap:16px;
+    margin:0 auto 34px;flex-wrap:wrap;
+  }
+  .pcard{
+    width:132px;background:var(--card);border:5px solid var(--c);
+    border-radius:var(--radius);box-shadow:0 10px 24px rgba(26,26,46,.12);
+    overflow:hidden;transform:rotate(var(--r));
+    animation:dealIn .55s cubic-bezier(.34,1.5,.5,1) both;
+    animation-delay:var(--d);
+    transition:transform .25s ease, box-shadow .25s ease;
+  }
+  .pcard:hover{transform:rotate(0deg) translateY(-8px) scale(1.05);box-shadow:0 18px 36px rgba(26,26,46,.2)}
+  .pcard .inner{animation:bob 4s ease-in-out infinite;animation-delay:var(--d)}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+  .pcard .face{background:var(--face);font-size:3.1rem;padding:20px 0 14px;text-align:center;line-height:1}
+  .pcard .word{
+    font-family:'Baloo 2';font-weight:800;font-size:1.15rem;text-align:center;
+    padding:8px 6px 10px;background:var(--card);
+  }
+  @keyframes dealIn{
+    from{opacity:0;transform:translateY(26px) rotate(var(--r)) scale(.92)}
+    to{opacity:1;transform:translateY(0) rotate(var(--r)) scale(1)}
+  }
+  .hero{position:relative}
+  .bg-emoji{
+    position:absolute;font-size:5.5rem;opacity:.07;pointer-events:none;user-select:none;
+    animation:bob 6s ease-in-out infinite;
+  }
+  .hero h1{font-size:clamp(2.2rem,5.5vw,3.3rem);font-weight:800;letter-spacing:-1px;margin-bottom:14px}
+  .hero h1 .grad{
+    background:linear-gradient(120deg,var(--teal),var(--mint));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  /* Scrollavslöjanden */
+  .reveal{opacity:0;transform:translateY(28px);transition:opacity .6s ease, transform .6s cubic-bezier(.22,1,.36,1)}
+  .reveal.in{opacity:1;transform:none}
+  .hero .sub{
+    font-size:1.13rem;font-weight:600;color:var(--muted);
+    max-width:560px;margin:0 auto 30px;
+  }
+  .hero .sub strong{color:var(--ink)}
+  .freeline{margin-top:16px;font-weight:800;font-size:.92rem;color:var(--teal);letter-spacing:.2px}
+
+  /* ── Scroll-reveal ── */
+  .rv{opacity:0;transform:translateY(28px);transition:opacity .6s ease,transform .6s cubic-bezier(.22,1,.36,1)}
+  .rv.in{opacity:1;transform:none}
+
+  /* ── Promo-bild ── */
+  .promo-frame{
+    max-width:560px;margin:0 auto;border-radius:30px;overflow:hidden;
+    box-shadow:0 24px 60px rgba(18,145,155,.28);
+    border:6px solid var(--card);
+    transform:rotate(-1.2deg);
+    transition:transform .3s ease;
+  }
+  .promo-frame:hover{transform:rotate(0deg) scale(1.01)}
+  .promo-frame img{width:100%;height:auto}
+
+  /* ── Sektioner ── */
+  section{padding:64px 0}
+  .sect-title{text-align:center;font-size:clamp(1.7rem,4vw,2.2rem);font-weight:800;margin-bottom:10px}
+  .sect-sub{text-align:center;color:var(--muted);font-weight:600;max-width:520px;margin:0 auto 42px}
+
+  /* Så funkar det – tre steg */
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+  .step{
+    background:var(--card);border-radius:26px;padding:28px 24px;
+    box-shadow:0 8px 24px rgba(26,26,46,.07);position:relative;
+    border-top:6px solid var(--c);
+  }
+  .step .num{
+    position:absolute;top:-18px;left:24px;width:36px;height:36px;border-radius:50%;
+    background:var(--c);color:#fff;font-family:'Baloo 2';font-weight:800;font-size:1.05rem;
+    display:flex;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(26,26,46,.18);
+  }
+  .step .ico{font-size:2.2rem;margin-bottom:10px}
+  .step h3{font-size:1.18rem;margin-bottom:6px}
+  .step p{font-size:.96rem;color:var(--muted);font-weight:600}
+
+  /* Funktioner – kort i appens stil */
+  .feats{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  .feat{
+    background:var(--card);border:4px solid var(--c);border-radius:var(--radius);
+    padding:20px 18px;box-shadow:0 6px 16px rgba(26,26,46,.06);
+  }
+  .feat .ico{font-size:1.9rem;margin-bottom:8px}
+  .feat h3{font-size:1.05rem;margin-bottom:3px}
+  .feat p{font-size:.9rem;color:var(--muted);font-weight:600;line-height:1.5}
+
+  /* Skärmbilder */
+  .shots{max-width:640px;margin:0 auto}
+  .shots img{
+    width:100%;border-radius:28px;
+    box-shadow:0 24px 60px rgba(26,26,46,.22);
+    transform:rotate(-1.2deg);
+    transition:transform .3s ease;
+  }
+  .shots img:hover{transform:rotate(0deg) scale(1.015)}
+
+  /* Gratis-remsa */
+  .free{
+    background:linear-gradient(135deg,var(--teal),var(--mint));
+    border-radius:30px;color:#fff;text-align:center;
+    padding:46px 26px;box-shadow:0 16px 40px rgba(18,145,155,.3);
+  }
+  .free h2{font-size:clamp(1.6rem,4vw,2.1rem);margin-bottom:10px}
+  .free p{font-weight:600;max-width:520px;margin:0 auto 22px;opacity:.95}
+  .free a.support{
+    color:#fff;font-weight:800;text-decoration:underline;text-underline-offset:3px;
+  }
+
+  /* Installera */
+  .installs{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+  .inst{
+    background:var(--card);border-radius:26px;padding:28px 26px;
+    box-shadow:0 8px 24px rgba(26,26,46,.07);
+  }
+  .inst h3{font-size:1.2rem;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+  .inst ol{list-style:none;counter-reset:s}
+  .inst li{
+    counter-increment:s;position:relative;padding-left:36px;margin-bottom:12px;
+    font-weight:600;font-size:.96rem;color:var(--stepnum);
+  }
+  .inst li::before{
+    content:counter(s);position:absolute;left:0;top:0;
+    width:25px;height:25px;border-radius:50%;background:var(--bg);
+    border:2.5px solid var(--teal);color:var(--teal);
+    font-family:'Baloo 2';font-weight:800;font-size:.85rem;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .inst li strong{color:var(--ink)}
+
+  /* Slut-CTA */
+  .final{text-align:center;padding:20px 0 80px}
+  .final h2{font-size:clamp(1.7rem,4vw,2.2rem);margin-bottom:24px}
+
+  footer{
+    background:var(--ink);color:rgba(255,255,255,.7);
+    text-align:center;padding:32px 22px;font-size:.9rem;font-weight:600;
+  }
+  footer a{color:var(--mint);font-weight:700;text-decoration:none}
+  footer a:hover{text-decoration:underline}
+
+  @media(max-width:760px){
+    .steps{grid-template-columns:1fr}
+    .feats{grid-template-columns:1fr 1fr}
+    .installs{grid-template-columns:1fr}
+    .pcard{width:104px}
+    .pcard .face{font-size:2.4rem;padding:16px 0 10px}
+    .pcard .word{font-size:.98rem}
+    .card-sentence{gap:10px}
+    section{padding:48px 0}
+  }
+  @media(max-width:420px){
+    .feats{grid-template-columns:1fr}
+  }
+  @media(prefers-reduced-motion:reduce){
+    .pcard,.pcard .inner,.float-card{animation:none}
+    .btn,.reveal{transition:none}
+    .reveal{opacity:1;transform:none}
+    html{scroll-behavior:auto}
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="topbar">
+    <a class="brand" href="#">
+      <img src="icon-192.png" alt="Bildstöds logotyp">
+      <span>Bildstöd</span>
+    </a>
+    <a class="btn small" href="https://ratso0.github.io/bildstod/">Öppna appen</a>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="float-card fc1" aria-hidden="true">🍎</div>
+    <div class="float-card fc2" aria-hidden="true">🏠</div>
+    <div class="float-card fc3" aria-hidden="true">😊</div>
+    <div class="float-card fc4" aria-hidden="true">👋</div>
+    <div class="card-sentence" aria-hidden="true">
+      <div class="pcard" style="--c:var(--green);--r:-5deg;--d:.05s">
+        <div class="inner"><div class="face">🙋</div><div class="word">Jag</div></div>
+      </div>
+      <div class="pcard" style="--c:var(--orange);--r:3deg;--d:.18s">
+        <div class="inner"><div class="face">✨</div><div class="word">vill</div></div>
+      </div>
+      <div class="pcard" style="--c:var(--blue);--r:-2deg;--d:.31s">
+        <div class="inner"><div class="face">🗣️</div><div class="word">prata</div></div>
+      </div>
+    </div>
+
+    <h1>Alla har <span class="grad">något att säga</span>.</h1>
+    <p class="sub">Bildstöd är ett <strong>gratis AKK-verktyg</strong> för barn och tonåringar som kommunicerar med bilder. Skapa egna bildkort med foto och din egen röst — barnet trycker, appen pratar.</p>
+    <a class="btn big" href="https://ratso0.github.io/bildstod/">Öppna appen gratis →</a>
+    <div class="freeline">Inget konto · Ingen kostnad · Ingen reklam</div>
+  </section>
+</div>
+
+<!-- SÅ FUNKAR DET -->
+<section>
+  <div class="wrap reveal">
+    <h2 class="sect-title">Så funkar det</h2>
+    <p class="sect-sub">Tre steg — sedan är ni igång</p>
+    <div class="steps">
+      <div class="step rv" style="--c:var(--green)">
+        <div class="num">1</div>
+        <div class="ico">📷</div>
+        <h3>Skapa egna kort</h3>
+        <p>Fota barnets egna saker och platser, eller välj bland emojis. Spela in din röst till varje kort.</p>
+      </div>
+      <div class="step rv" style="--c:var(--blue)">
+        <div class="num">2</div>
+        <div class="ico">👆</div>
+        <h3>Barnet trycker</h3>
+        <p>Stora tydliga kort, sorterade i kategorier som ni själva bestämmer. Appen läser upp ordet.</p>
+      </div>
+      <div class="step rv" style="--c:var(--pink)">
+        <div class="num">3</div>
+        <div class="ico">👍</div>
+        <h3>Ja och nej — alltid nära</h3>
+        <p>Två stora knappar längst ner, med talsyntes eller er egen inspelade röst.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SE APPEN -->
+<section>
+  <div class="wrap">
+    <h2 class="sect-title rv">Se appen i aktion</h2>
+    <p class="sect-sub rv">Skapa, organisera och anpassa er kommunikation</p>
+    <div class="promo-frame rv">
+      <img src="promo.jpg" alt="Tre skärmar från Bildstöd: kategorier med bildkort, lägga till nytt kort, och skapa eget bildkort med foto och ljud" loading="lazy">
+    </div>
+  </div>
+</section>
+
+<!-- SKÄRMBILDER -->
+<section>
+  <div class="wrap reveal">
+    <h2 class="sect-title">Se hur det ser ut</h2>
+    <p class="sect-sub">Tydliga kort, enkel redigering — allt på svenska</p>
+    <div class="shots">
+      <img src="skarmar.jpg" alt="Tre skärmbilder från Bildstöd: kategorivyn med bildkort, dialog för att lägga till kategori eller bildkort, och formulär för att skapa nytt bildkort med bild och ljud." loading="lazy">
+    </div>
+  </div>
+</section>
+
+<!-- FUNKTIONER -->
+<section>
+  <div class="wrap reveal">
+    <h2 class="sect-title">Byggd för verkliga behov</h2>
+    <p class="sect-sub">Utvecklad i dialog med föräldrar och pedagoger</p>
+    <div class="feats">
+      <div class="feat" style="--c:var(--green)"><div class="ico">🎙️</div><h3>Din egen röst</h3><p>Spela in ljud till varje kort — en röst barnet känner igen.</p></div>
+      <div class="feat" style="--c:var(--blue)"><div class="ico">🗂️</div><h3>Kategorier i nivåer</h3><p>Mat → Frukost → Fil. Bygg strukturen som passar er.</p></div>
+      <div class="feat" style="--c:var(--purple)"><div class="ico">🌙</div><h3>Mörkt läge</h3><p>Skonsamt för barn som är känsliga för starkt ljus.</p></div>
+      <div class="feat" style="--c:var(--orange)"><div class="ico">📤</div><h3>Säkerhetskopiering</h3><p>Spara allt till en fil — byt telefon utan att förlora något.</p></div>
+      <div class="feat" style="--c:var(--pink)"><div class="ico">🔒</div><h3>Vuxenläge</h3><p>PIN-skyddad redigering. Barnet kan inte ändra av misstag.</p></div>
+      <div class="feat" style="--c:var(--yellow)"><div class="ico">📴</div><h3>Fungerar offline</h3><p>Allt sparas på enheten. Inget skickas till någon server.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- GRATIS -->
+<section>
+  <div class="wrap">
+    <div class="free rv">
+      <h2>Gratis. På riktigt.</h2>
+      <p>Bildstöd kostar ingenting och kommer alltid vara gratis för familjer. Inga konton, inga prenumerationer, ingen reklam — barns kommunikation ska inte ha ett prislapp.</p>
+      <p>Vill du ändå stötta utvecklingen? <a class="support" href="https://hihat.io/bildstd">Swisha en slant via Hihat</a> ☕</p>
+    </div>
+  </div>
+</section>
+
+<!-- INSTALLERA -->
+<section>
+  <div class="wrap reveal">
+    <h2 class="sect-title">Lägg appen på hemskärmen</h2>
+    <p class="sect-sub">Bildstöd fungerar som en riktig app — utan App Store</p>
+    <div class="installs">
+      <div class="inst rv">
+        <h3>📱 iPhone &amp; iPad</h3>
+        <ol>
+          <li>Öppna appen i <strong>Safari</strong></li>
+          <li>Tryck på <strong>dela-knappen</strong> (fyrkant med pil)</li>
+          <li>Välj <strong>”Lägg till på hemskärmen”</strong></li>
+        </ol>
+      </div>
+      <div class="inst rv">
+        <h3>🤖 Android</h3>
+        <ol>
+          <li>Öppna appen i <strong>Chrome</strong></li>
+          <li>Tryck på <strong>menyn ⋮</strong></li>
+          <li>Välj <strong>”Installera app”</strong></li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SLUT-CTA -->
+<div class="final wrap">
+  <h2>Redo att ge orden bilder?</h2>
+  <a class="btn big" href="https://ratso0.github.io/bildstod/">Öppna Bildstöd →</a>
+</div>
+
+<footer>
+  © 2025 ratso0 · Bildstöd — gjord med ❤️ för barn som behöver bildstöd<br>
+  <a href="https://ratso0.github.io/bildstod/">ratso0.github.io/bildstod</a> · <a href="https://hihat.io/bildstd">Stöd appen</a>
+</footer>
+
+<script>
+(function(){
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var els = document.querySelectorAll('.rv');
+  if(reduce || !('IntersectionObserver' in window)){
+    els.forEach(function(el){el.classList.add('in');});
+    return;
+  }
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); }
+    });
+  },{threshold:.15});
+  els.forEach(function(el){io.observe(el);});
+})();
+</script>
+<script>
+(function(){
+  var els=document.querySelectorAll('.reveal');
+  if(!('IntersectionObserver' in window)){els.forEach(function(e){e.classList.add('in')});return;}
+  var io=new IntersectionObserver(function(entries){
+    entries.forEach(function(en){ if(en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target); } });
+  },{threshold:0.12});
+  els.forEach(function(e){io.observe(e)});
+})();
+</script>
+</body>
+</html>
