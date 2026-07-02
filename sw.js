@@ -1,5 +1,5 @@
 // Enkel service worker för Bildstöd
-const CACHE = 'bildstod-0.07';
+const CACHE = 'bildstod-0.08';
 const ASSETS = [
   './',
   './index.html',
