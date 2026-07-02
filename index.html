@@ -544,6 +544,16 @@
   </div>
 </div>
 
+<!-- VÄLJ BILDKÄLLA (Android) -->
+<div class="overlay" id="srcOverlay" style="z-index:290;align-items:center;justify-content:center">
+  <div class="modal" style="width:calc(100% - 60px);max-width:320px;border-radius:26px;padding:26px 22px;transform:none">
+    <h2 style="margin-bottom:18px">Lägg till bild</h2>
+    <button class="mbtn mb-blue" id="srcCamera">📷 Ta bild</button>
+    <button class="mbtn mb-lavender" id="srcGallery">🖼️ Välj från galleri</button>
+    <button class="mbtn mb-gray" id="srcCancel">✕ Avbryt</button>
+  </div>
+</div>
+
 <!-- BESKÄRNING -->
 <div class="overlay" id="cropOverlay">
   <div class="modal">
@@ -1026,8 +1036,27 @@ $('c1Back').addEventListener('click',()=>{showStep('s0');$('mTitle').textContent
 $('c2Back').addEventListener('click',()=>{pAudio=null;$('audPrev').style.display='none';$('recIdle').style.display='';showStep('sC1');$('mTitle').textContent='Nytt bildkort';});
 
 function setPhotoArea(id,src){const a=$(id);a.innerHTML='';const img=document.createElement('img');img.src=src;a.appendChild(img);}
-$('fPhotoArea').addEventListener('click',()=>{fileTgt='folder';fileInp.removeAttribute('capture');fileInp.click();});
-$('cPhotoArea').addEventListener('click',()=>{fileTgt='card';fileInp.removeAttribute('capture');fileInp.click();});
+// iPhone visar egen kamera/galleri-meny; på Android visar vi vår egen
+const IS_IOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
+let srcInput=null;
+function pickImage(inputEl){
+  if(IS_IOS){ inputEl.removeAttribute('capture'); inputEl.click(); return; }
+  srcInput=inputEl;
+  document.getElementById('srcOverlay').classList.add('open');
+}
+document.getElementById('srcCamera').addEventListener('click',()=>{
+  document.getElementById('srcOverlay').classList.remove('open');
+  if(srcInput){srcInput.setAttribute('capture','environment');srcInput.click();}
+});
+document.getElementById('srcGallery').addEventListener('click',()=>{
+  document.getElementById('srcOverlay').classList.remove('open');
+  if(srcInput){srcInput.removeAttribute('capture');srcInput.click();}
+});
+document.getElementById('srcCancel').addEventListener('click',()=>{
+  document.getElementById('srcOverlay').classList.remove('open');srcInput=null;
+});
+$('fPhotoArea').addEventListener('click',()=>{fileTgt='folder';pickImage(fileInp);});
+$('cPhotoArea').addEventListener('click',()=>{fileTgt='card';pickImage(fileInp);});
 // ── Beskärning (pan + pinch-zoom → fyrkantig bild) ──
 const cropOverlay=document.getElementById('cropOverlay');
 const cropImgEl=document.getElementById('cropImg');
@@ -1258,7 +1287,7 @@ function buildEEmojis(filter=''){
 $('eEmojiSearch').addEventListener('input',function(){buildEEmojis(this.value);});
 
 // Edit photo
-$('ePhotoArea').addEventListener('click',()=>{eFileInput.removeAttribute('capture');eFileInput.click();});
+$('ePhotoArea').addEventListener('click',()=>{pickImage(eFileInput);});
 eFileInput.addEventListener('change',()=>{
   const file=eFileInput.files[0];if(!file)return;
   const reader=new FileReader();
@@ -1329,7 +1358,8 @@ async function seed(){
 const APP_VERSION = '0.07';
 const WHATS_NEW = [
   '🖼️ Justera bilden — dra och zooma innan den sparas',
-  '🟦 Alla kort har nu samma fyrkantiga storlek'
+  '🟦 Alla kort har nu samma fyrkantiga storlek',
+  '📷 Android: välj mellan kamera och galleri'
 ];
 
 function showWhatsNew(){
