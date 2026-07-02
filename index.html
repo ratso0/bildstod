@@ -44,6 +44,8 @@
     body.dark .eopt { background: #232a3d; }
     body.dark .emoji-row-wrap input { background: #12141c; color: #e8e8f0; border-color: #3a4055 !important; }
     body.dark .toast { background: #e8e8f0; color: #12141c; }
+    body.dark #cropView { border-color: #2fb9c4; background: #000; }
+    body.dark .msub { color: #8a90a5; }
     #app { display: flex; flex-direction: column; height: 100dvh; height: 100vh; }
 
     /* ── HEADER ── */
@@ -119,13 +121,33 @@
     @keyframes pop { 35% { transform: scale(1.07); } }
 
     .card-visual {
-      flex: 1; width: 100%;
+      width: 100%; aspect-ratio: 1 / 1;
       display: flex; align-items: center; justify-content: center;
-      overflow: hidden; min-height: 130px;
+      overflow: hidden;
     }
     .card-visual img { width: 100%; height: 100%; object-fit: cover; display: block; }
     .big-emoji { font-size: 4.5rem; line-height: 1; }
     .card.folder .card-visual { background: #F0F8FF; }
+
+    /* ── BESKÄRNING ── */
+    #cropOverlay { z-index: 300; align-items: center; justify-content: center; }
+    #cropOverlay .modal {
+      width: calc(100% - 40px); max-width: 380px; border-radius: 28px;
+      padding: 24px 20px 26px; transform: none;
+    }
+    #cropView {
+      width: min(72vw, 300px); height: min(72vw, 300px);
+      margin: 0 auto 16px; border-radius: 20px; overflow: hidden;
+      position: relative; background: #111; touch-action: none;
+      border: 3px solid var(--blue); cursor: grab;
+    }
+    #cropView:active { cursor: grabbing; }
+    #cropImg {
+      position: absolute; left: 50%; top: 50%;
+      transform-origin: center; will-change: transform;
+      max-width: none; user-select: none; -webkit-user-drag: none; pointer-events: none;
+    }
+    #cropZoom { width: 100%; max-width: 300px; display: block; margin: 0 auto 18px; accent-color: var(--blue); }
 
     .card-label {
       padding: 10px 10px 13px; font-weight: 900;
@@ -522,12 +544,827 @@
   </div>
 </div>
 
+<!-- BESKÄRNING -->
+<div class="overlay" id="cropOverlay">
+  <div class="modal">
+    <h2>Justera bilden</h2>
+    <div class="msub">Dra för att flytta · Nyp eller använd reglaget för att zooma</div>
+    <div id="cropView"><img id="cropImg" alt=""></div>
+    <input type="range" id="cropZoom" min="0" max="100" value="0">
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button class="mbtn mb-gray" id="cropCancel" style="flex:1;max-width:140px">✕ Avbryt</button>
+      <button class="mbtn mb-green" id="cropDone" style="flex:1;max-width:140px">✓ Klar</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toastEl"></div>
 
-<script>// © 2025 ratso0. Alla rättigheter förbehållna.
-// Bildstöd - AAC-app för barn och tonåringar
-// Obehörig kopiering eller distribution är förbjuden.
+<script>
+// ── DB ──
+let db;
+function openDB(){
+  return new Promise((res,rej)=>{
+    const r=indexedDB.open('BildstodV3',1);
+    r.onupgradeneeded=e=>{ if(!e.target.result.objectStoreNames.contains('nodes')) e.target.result.createObjectStore('nodes',{keyPath:'id',autoIncrement:true}); };
+    r.onsuccess=e=>{db=e.target.result;res();};
+    r.onerror=e=>rej(e.target.error);
+  });
+}
+const txS=m=>db.transaction('nodes',m||'readonly').objectStore('nodes');
+const dbAll=()=>db?new Promise((res,rej)=>{const r=txS().getAll();r.onsuccess=e=>res(e.target.result);r.onerror=rej;}):Promise.resolve([]);
+const dbAdd=n=>db?new Promise((res,rej)=>{const r=txS('readwrite').add(n);r.onsuccess=e=>res(e.target.result);r.onerror=rej;}):Promise.resolve(Math.random());
+const dbDel=id=>db?new Promise((res,rej)=>{const t=db.transaction('nodes','readwrite');t.objectStore('nodes').delete(id);t.oncomplete=res;t.onerror=rej;}):Promise.resolve();
+const dbPut=n=>db?new Promise((res,rej)=>{const r=txS('readwrite').put(n);r.onsuccess=e=>res(e.target.result);r.onerror=rej;}):Promise.resolve();
 
-const a0_0x22c6f0=a0_0x4b77;(function(_0x27ba99,_0x917f8a){const _0x337424=a0_0x4b77,_0x19e75b=_0x27ba99();while(!![]){try{const _0x28b4e3=-parseInt(_0x337424(0x1fd))/0x1+-parseInt(_0x337424(0x175))/0x2+parseInt(_0x337424(0x1e1))/0x3+-parseInt(_0x337424(0x21f))/0x4*(-parseInt(_0x337424(0x21e))/0x5)+parseInt(_0x337424(0x22e))/0x6+parseInt(_0x337424(0x1ee))/0x7*(parseInt(_0x337424(0x18c))/0x8)+-parseInt(_0x337424(0x2db))/0x9*(parseInt(_0x337424(0x121))/0xa);if(_0x28b4e3===_0x917f8a)break;else _0x19e75b['push'](_0x19e75b['shift']());}catch(_0x2d86fa){_0x19e75b['push'](_0x19e75b['shift']());}}}(a0_0xb74a,0x595a9));let db;function openDB(){return new Promise((_0xef1b0a,_0x3bf28f)=>{const _0x5c09b1=a0_0x4b77,_0x1d6aba=indexedDB['open'](_0x5c09b1(0x243),0x1);_0x1d6aba[_0x5c09b1(0x197)]=_0x49deba=>{const _0x352a69=_0x5c09b1;if(!_0x49deba[_0x352a69(0x22b)]['result'][_0x352a69(0x17e)]['contains'](_0x352a69(0x141)))_0x49deba[_0x352a69(0x22b)][_0x352a69(0x1b9)][_0x352a69(0x2a7)](_0x352a69(0x141),{'keyPath':'id','autoIncrement':!![]});},_0x1d6aba[_0x5c09b1(0xff)]=_0x6fc6e7=>{db=_0x6fc6e7['target']['result'],_0xef1b0a();},_0x1d6aba['onerror']=_0x5eca7e=>_0x3bf28f(_0x5eca7e[_0x5c09b1(0x22b)]['error']);});}const txS=_0x5979c4=>db[a0_0x22c6f0(0x27d)]('nodes',_0x5979c4||a0_0x22c6f0(0x22a))[a0_0x22c6f0(0x15d)](a0_0x22c6f0(0x141)),dbAll=()=>db?new Promise((_0x7a25ae,_0x15f153)=>{const _0x5a3b60=a0_0x22c6f0,_0x4393d3=txS()[_0x5a3b60(0x13c)]();_0x4393d3[_0x5a3b60(0xff)]=_0x2e71b8=>_0x7a25ae(_0x2e71b8[_0x5a3b60(0x22b)][_0x5a3b60(0x1b9)]),_0x4393d3[_0x5a3b60(0x249)]=_0x15f153;}):Promise[a0_0x22c6f0(0x16b)]([]),dbAdd=_0x1c393c=>db?new Promise((_0x450a78,_0x545be5)=>{const _0x58cd9b=a0_0x22c6f0,_0x479f80=txS(_0x58cd9b(0x1c0))[_0x58cd9b(0x17a)](_0x1c393c);_0x479f80[_0x58cd9b(0xff)]=_0x5b591d=>_0x450a78(_0x5b591d['target'][_0x58cd9b(0x1b9)]),_0x479f80[_0x58cd9b(0x249)]=_0x545be5;}):Promise[a0_0x22c6f0(0x16b)](Math[a0_0x22c6f0(0x217)]()),dbDel=_0x777b03=>db?new Promise((_0x30f810,_0x1a25c6)=>{const _0x13c491=a0_0x22c6f0,_0x329fab=db[_0x13c491(0x27d)](_0x13c491(0x141),'readwrite');_0x329fab[_0x13c491(0x15d)](_0x13c491(0x141))[_0x13c491(0x13f)](_0x777b03),_0x329fab[_0x13c491(0x1c1)]=_0x30f810,_0x329fab[_0x13c491(0x249)]=_0x1a25c6;}):Promise[a0_0x22c6f0(0x16b)](),dbPut=_0xf53590=>db?new Promise((_0x5b3afc,_0x306403)=>{const _0x5c936e=a0_0x22c6f0,_0x52939b=txS('readwrite')['put'](_0xf53590);_0x52939b['onsuccess']=_0x57ee84=>_0x5b3afc(_0x57ee84[_0x5c936e(0x22b)][_0x5c936e(0x1b9)]),_0x52939b[_0x5c936e(0x249)]=_0x306403;}):Promise[a0_0x22c6f0(0x16b)]();let confirmResolve=null;const confirmOverlay=document[a0_0x22c6f0(0x280)](a0_0x22c6f0(0x2e7));function customConfirm(_0x2782ca){return new Promise(_0x8a580=>{const _0x252823=a0_0x4b77;confirmResolve=_0x8a580,document[_0x252823(0x280)]('confirmMsg')['textContent']=_0x2782ca,confirmOverlay['classList']['add']('open');});}document['getElementById']('confirmYes')['addEventListener'](a0_0x22c6f0(0x23a),()=>{const _0x12b330=a0_0x22c6f0;confirmOverlay[_0x12b330(0x25a)][_0x12b330(0x111)](_0x12b330(0x2ad)),confirmResolve&&(confirmResolve(!![]),confirmResolve=null);}),document[a0_0x22c6f0(0x280)](a0_0x22c6f0(0x11f))[a0_0x22c6f0(0x189)](a0_0x22c6f0(0x23a),()=>{const _0x4abaa0=a0_0x22c6f0;confirmOverlay['classList'][_0x4abaa0(0x111)]('open'),confirmResolve&&(confirmResolve(![]),confirmResolve=null);}),confirmOverlay[a0_0x22c6f0(0x189)]('click',_0x38b860=>{const _0x33d4e9=a0_0x22c6f0;_0x38b860[_0x33d4e9(0x22b)]===confirmOverlay&&(confirmOverlay[_0x33d4e9(0x25a)][_0x33d4e9(0x111)](_0x33d4e9(0x2ad)),confirmResolve&&(confirmResolve(![]),confirmResolve=null));});const PIN_KEY=a0_0x22c6f0(0x1d4),getPin=()=>localStorage['getItem'](PIN_KEY)||a0_0x22c6f0(0x1fb),setPin=_0x219df8=>localStorage[a0_0x22c6f0(0x1ad)](PIN_KEY,_0x219df8);let isAdult=![],pinBuffer='';function setAdult(_0x19e22d){const _0x4d0c61=a0_0x22c6f0;isAdult=_0x19e22d,document[_0x4d0c61(0x15b)]['classList'][_0x4d0c61(0x2d5)](_0x4d0c61(0x133),_0x19e22d),document[_0x4d0c61(0x280)](_0x4d0c61(0x1da))[_0x4d0c61(0x25a)][_0x4d0c61(0x2d5)](_0x4d0c61(0x1b4),_0x19e22d),document[_0x4d0c61(0x280)]('adultBar')[_0x4d0c61(0x25a)][_0x4d0c61(0x2d5)](_0x4d0c61(0x161),_0x19e22d),document['getElementById'](_0x4d0c61(0x21a))[_0x4d0c61(0x103)]=_0x19e22d?'🔓':'🔒',document['getElementById'](_0x4d0c61(0x228))[_0x4d0c61(0x25a)][_0x4d0c61(0x2d5)]('hidden',!_0x19e22d),render();}const pinOverlay=document[a0_0x22c6f0(0x280)](a0_0x22c6f0(0x20c));function openPinModal(_0xdb7bee){const _0x11adb0=a0_0x22c6f0;pinBuffer='';const _0x31b836=_0xdb7bee&&isAdult;document[_0x11adb0(0x280)](_0x11adb0(0x171))[_0x11adb0(0x103)]=_0x31b836?'🔓\x20Vuxenläge\x20aktivt':_0x11adb0(0xec),document[_0x11adb0(0x280)]('pinSubtitle')['textContent']=_0x31b836?'':_0x11adb0(0x275),document[_0x11adb0(0x280)]('pinError')[_0x11adb0(0x103)]='',document[_0x11adb0(0x280)](_0x11adb0(0x1f5))['style']['display']=_0x31b836?'none':'',document[_0x11adb0(0x280)]('pinDisplay')['style'][_0x11adb0(0x167)]=_0x31b836?_0x11adb0(0x1ea):'',document[_0x11adb0(0x280)](_0x11adb0(0x1a6))['style'][_0x11adb0(0x167)]=_0x31b836?'none':'',document[_0x11adb0(0x280)](_0x11adb0(0x287))[_0x11adb0(0x25a)][_0x11adb0(0x2d5)]('show',_0x31b836),document[_0x11adb0(0x280)](_0x11adb0(0x2b3))[_0x11adb0(0x19c)]='',document[_0x11adb0(0x280)]('newPin2')[_0x11adb0(0x19c)]='',updateDots(),pinOverlay[_0x11adb0(0x25a)][_0x11adb0(0x17a)](_0x11adb0(0x2ad));}function closePinModal(){const _0x374bc3=a0_0x22c6f0;pinOverlay['classList']['remove']('open'),pinBuffer='',document[_0x374bc3(0x280)]('pinDisplay')[_0x374bc3(0x1a5)]['display']='',document['getElementById'](_0x374bc3(0x1a6))[_0x374bc3(0x1a5)][_0x374bc3(0x167)]='',document[_0x374bc3(0x280)](_0x374bc3(0x287))['classList']['remove'](_0x374bc3(0x161));}function updateDots(){const _0x1af56f=a0_0x22c6f0;for(let _0x468df6=0x0;_0x468df6<0x4;_0x468df6++){const _0xb1fb68=document[_0x1af56f(0x280)]('d'+_0x468df6);_0xb1fb68[_0x1af56f(0x25a)][_0x1af56f(0x111)](_0x1af56f(0x1ed),_0x1af56f(0xe7));if(_0x468df6<pinBuffer[_0x1af56f(0x2e4)])_0xb1fb68[_0x1af56f(0x25a)][_0x1af56f(0x17a)](_0x1af56f(0x1ed));}}function showPinError(){const _0x6d7216=a0_0x22c6f0;for(let _0xff25=0x0;_0xff25<0x4;_0xff25++)document['getElementById']('d'+_0xff25)[_0x6d7216(0x25a)]['add']('error');document['getElementById'](_0x6d7216(0x1a4))[_0x6d7216(0x103)]=_0x6d7216(0x177),setTimeout(()=>{const _0x3c642c=_0x6d7216;pinBuffer='',updateDots(),document[_0x3c642c(0x280)](_0x3c642c(0x1a4))[_0x3c642c(0x103)]='';},0x384);}document['querySelectorAll'](a0_0x22c6f0(0x1c5))[a0_0x22c6f0(0x2c3)](_0xc978f8=>{_0xc978f8['addEventListener']('click',()=>{const _0x1e1ed4=a0_0x4b77;if(pinBuffer[_0x1e1ed4(0x2e4)]>=0x4)return;pinBuffer+=_0xc978f8[_0x1e1ed4(0x1f9)]['n'],updateDots();if(pinBuffer[_0x1e1ed4(0x2e4)]===0x4)setTimeout(()=>{if(pinBuffer===getPin())closePinModal(),setAdult(!![]),toast('Vuxenläge\x20aktiverat\x20🔓');else showPinError();},0x78);});}),document[a0_0x22c6f0(0x280)](a0_0x22c6f0(0x116))['addEventListener'](a0_0x22c6f0(0x23a),()=>{const _0x3c6032=a0_0x22c6f0;pinBuffer=pinBuffer[_0x3c6032(0x169)](0x0,-0x1),updateDots(),document['getElementById'](_0x3c6032(0x1a4))[_0x3c6032(0x103)]='';}),document[a0_0x22c6f0(0x280)](a0_0x22c6f0(0x211))['addEventListener']('click',closePinModal),document[a0_0x22c6f0(0x280)](a0_0x22c6f0(0x298))[a0_0x22c6f0(0x189)](a0_0x22c6f0(0x23a),()=>{const _0xf74aff=a0_0x22c6f0;closePinModal(),setAdult(![]),toast(_0xf74aff(0x2d4));}),document[a0_0x22c6f0(0x25c)]('.acc-head')[a0_0x22c6f0(0x2c3)](_0x2a28a5=>{const _0x29bd61=a0_0x22c6f0;_0x2a28a5['addEventListener'](_0x29bd61(0x23a),()=>{const _0x421d1d=_0x29bd61,_0x4edb4e=_0x2a28a5[_0x421d1d(0x18b)],_0x2ede3a=_0x4edb4e[_0x421d1d(0x25a)][_0x421d1d(0x2d1)]('open');document[_0x421d1d(0x25c)](_0x421d1d(0x2c1))[_0x421d1d(0x2c3)](_0x10bd61=>_0x10bd61[_0x421d1d(0x25a)]['remove'](_0x421d1d(0x2ad)));if(!_0x2ede3a)_0x4edb4e[_0x421d1d(0x25a)][_0x421d1d(0x17a)]('open');});});function applyDarkMode(_0x5f456a){const _0x43e355=a0_0x22c6f0;document['body']['classList'][_0x43e355(0x2d5)](_0x43e355(0x2a0),_0x5f456a);const _0x4fd3fe=document[_0x43e355(0x280)](_0x43e355(0xf6));if(_0x4fd3fe)_0x4fd3fe[_0x43e355(0x103)]=_0x5f456a?_0x43e355(0x137):_0x43e355(0xe9);}let darkMode=localStorage[a0_0x22c6f0(0x240)](a0_0x22c6f0(0x1d7))==='1';applyDarkMode(darkMode),document['getElementById']('darkModeBtn')[a0_0x22c6f0(0x189)](a0_0x22c6f0(0x23a),()=>{const _0x155cc5=a0_0x22c6f0;darkMode=!darkMode,localStorage['setItem']('bildstod_dark',darkMode?'1':'0'),applyDarkMode(darkMode),toast(darkMode?_0x155cc5(0x2f8):_0x155cc5(0x23f));});let wakeLock=null;async function requestWakeLock(){const _0x15b6fa=a0_0x22c6f0;try{_0x15b6fa(0x229)in navigator&&(wakeLock=await navigator[_0x15b6fa(0x229)][_0x15b6fa(0x2c8)](_0x15b6fa(0x2e6)));}catch(_0x7469da){}}function a0_0x4b77(_0x3c0a22,_0x3e0cab){_0x3c0a22=_0x3c0a22-0xe4;const _0xb74a1=a0_0xb74a();let _0x4b7784=_0xb74a1[_0x3c0a22];if(a0_0x4b77['Fztexw']===undefined){var _0x2f3411=function(_0x16b653){const _0x2e326c='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+/=';let _0xef1b0a='',_0x3bf28f='';for(let _0x1d6aba=0x0,_0x49deba,_0x6fc6e7,_0x5eca7e=0x0;_0x6fc6e7=_0x16b653['charAt'](_0x5eca7e++);~_0x6fc6e7&&(_0x49deba=_0x1d6aba%0x4?_0x49deba*0x40+_0x6fc6e7:_0x6fc6e7,_0x1d6aba++%0x4)?_0xef1b0a+=String['fromCharCode'](0xff&_0x49deba>>(-0x2*_0x1d6aba&0x6)):0x0){_0x6fc6e7=_0x2e326c['indexOf'](_0x6fc6e7);}for(let _0x5979c4=0x0,_0x7a25ae=_0xef1b0a['length'];_0x5979c4<_0x7a25ae;_0x5979c4++){_0x3bf28f+='%'+('00'+_0xef1b0a['charCodeAt'](_0x5979c4)['toString'](0x10))['slice'](-0x2);}return decodeURIComponent(_0x3bf28f);};a0_0x4b77['qtOUpY']=_0x2f3411,a0_0x4b77['XMWOgz']={},a0_0x4b77['Fztexw']=!![];}const _0x20b4bb=_0xb74a1[0x0],_0x3d0a8e=_0x3c0a22+_0x20b4bb,_0x1cd169=a0_0x4b77['XMWOgz'][_0x3d0a8e];return!_0x1cd169?(_0x4b7784=a0_0x4b77['qtOUpY'](_0x4b7784),a0_0x4b77['XMWOgz'][_0x3d0a8e]=_0x4b7784):_0x4b7784=_0x1cd169,_0x4b7784;}document[a0_0x22c6f0(0x189)](a0_0x22c6f0(0x270),()=>{const _0x2c8947=a0_0x22c6f0;if(document[_0x2c8947(0x1bb)]===_0x2c8947(0xfc))requestWakeLock();}),requestWakeLock(),document[a0_0x22c6f0(0x280)](a0_0x22c6f0(0x14c))['addEventListener'](a0_0x22c6f0(0x23a),()=>{const _0x35d8df=a0_0x22c6f0;window[_0x35d8df(0x2ad)]('https://hihat.io/bildstd',_0x35d8df(0x1b2));}),document['getElementById'](a0_0x22c6f0(0x146))['addEventListener'](a0_0x22c6f0(0x23a),async()=>{const _0x3049db=a0_0x22c6f0;try{const _0xc7e0e6={'version':0x1,'exportedAt':new Date()['toISOString'](),'nodes':all},_0x23d22e=JSON[_0x3049db(0x147)](_0xc7e0e6),_0x216e12=new Blob([_0x23d22e],{'type':_0x3049db(0x2ea)}),_0x325ed7=URL['createObjectURL'](_0x216e12),_0x345418=document[_0x3049db(0x164)]('a'),_0xd8ad39=new Date(),_0x1a69a8=_0xd8ad39['getFullYear']()+'-'+String(_0xd8ad39[_0x3049db(0x2a1)]()+0x1)[_0x3049db(0x26e)](0x2,'0')+'-'+String(_0xd8ad39['getDate']())[_0x3049db(0x26e)](0x2,'0');_0x345418[_0x3049db(0x214)]=_0x325ed7,_0x345418[_0x3049db(0x174)]='bildstod-backup-'+_0x1a69a8+_0x3049db(0x101),document[_0x3049db(0x15b)]['appendChild'](_0x345418),_0x345418[_0x3049db(0x23a)](),document['body']['removeChild'](_0x345418),setTimeout(()=>URL['revokeObjectURL'](_0x325ed7),0x3e8),toast('Säkerhetskopia\x20sparad!\x20📤');}catch(_0x186d85){toast(_0x3049db(0x2bb)+_0x186d85[_0x3049db(0x1d9)]);}}),document[a0_0x22c6f0(0x280)](a0_0x22c6f0(0x1c7))[a0_0x22c6f0(0x189)](a0_0x22c6f0(0x23a),()=>document[a0_0x22c6f0(0x280)](a0_0x22c6f0(0x23c))['click']()),document['getElementById'](a0_0x22c6f0(0x23c))[a0_0x22c6f0(0x189)]('change',function(){const _0x49d845=a0_0x22c6f0,_0x595663=this[_0x49d845(0x24f)][0x0];if(!_0x595663)return;const _0x4c1ce=new FileReader();_0x4c1ce[_0x49d845(0x1c6)]=async _0x3ae6ae=>{const _0x2d37a2=_0x49d845;try{const _0x498cdf=JSON[_0x2d37a2(0x2cd)](_0x3ae6ae[_0x2d37a2(0x22b)]['result']);if(!_0x498cdf[_0x2d37a2(0x141)]||!Array[_0x2d37a2(0x2bf)](_0x498cdf[_0x2d37a2(0x141)])){toast(_0x2d37a2(0x273));return;}const _0x231bed=await customConfirm('Återställ\x20'+_0x498cdf[_0x2d37a2(0x141)]['length']+_0x2d37a2(0x239));if(!_0x231bed)return;for(const _0x17e324 of[...all])await dbDel(_0x17e324['id']);all=[];const _0x56cede={},_0x24f4e1=[..._0x498cdf[_0x2d37a2(0x141)]][_0x2d37a2(0x1fc)]((_0x34c553,_0xbca38e)=>(_0x34c553['id']||0x0)-(_0xbca38e['id']||0x0));for(const _0x37c15a of _0x24f4e1){const _0x4d3356=_0x37c15a['id'],_0x281dec={'parentId':_0x37c15a[_0x2d37a2(0xfd)],'type':_0x37c15a[_0x2d37a2(0x232)],'name':_0x37c15a[_0x2d37a2(0x2eb)],'emoji':_0x37c15a[_0x2d37a2(0x24b)]||null,'imageData':_0x37c15a[_0x2d37a2(0x28e)]||null,'audioData':_0x37c15a[_0x2d37a2(0x1d8)]||null,'createdAt':_0x37c15a[_0x2d37a2(0x2aa)]||Date['now']()},_0x586106=await dbAdd(_0x281dec);_0x281dec['id']=_0x586106,_0x56cede[_0x4d3356]=_0x586106,all[_0x2d37a2(0x1a0)](_0x281dec);}for(const _0x1d975e of all){_0x1d975e['parentId']!=null&&_0x56cede[_0x1d975e[_0x2d37a2(0xfd)]]!=null&&(_0x1d975e[_0x2d37a2(0xfd)]=_0x56cede[_0x1d975e[_0x2d37a2(0xfd)]],await dbPut(_0x1d975e));}nav=[],render(),closePinModal(),toast('Återställt!\x20✅');}catch(_0x220071){toast(_0x2d37a2(0x1c3)+_0x220071[_0x2d37a2(0x1d9)]);}},_0x4c1ce['readAsText'](_0x595663),this[_0x49d845(0x19c)]='';}),pinOverlay[a0_0x22c6f0(0x189)](a0_0x22c6f0(0x23a),_0x518c7b=>{if(_0x518c7b['target']===pinOverlay)closePinModal();}),document['getElementById'](a0_0x22c6f0(0x21a))[a0_0x22c6f0(0x189)](a0_0x22c6f0(0x23a),()=>openPinModal(isAdult)),document[a0_0x22c6f0(0x280)](a0_0x22c6f0(0x18d))[a0_0x22c6f0(0x189)](a0_0x22c6f0(0x23a),()=>{const _0x216684=a0_0x22c6f0,_0x470318=String(document['getElementById'](_0x216684(0x2b3))[_0x216684(0x19c)])[_0x216684(0x242)](),_0x4f5fe9=String(document['getElementById'](_0x216684(0x1d6))['value'])[_0x216684(0x242)]();if(!/^\d{4}$/[_0x216684(0x2d8)](_0x470318)){toast('PIN\x20måste\x20vara\x204\x20siffror!');return;}if(_0x470318!==_0x4f5fe9){toast(_0x216684(0x1a7));return;}setPin(_0x470318),toast('PIN-kod\x20ändrad!\x20✅'),document[_0x216684(0x280)]('newPin1')[_0x216684(0x19c)]='',document[_0x216684(0x280)](_0x216684(0x1d6))['value']='';});let all=[],nav=[],curAudio=null;const pid=()=>nav[a0_0x22c6f0(0x2e4)]?nav[nav[a0_0x22c6f0(0x2e4)]-0x1]['id']:null,kids=_0x3f1bea=>all[a0_0x22c6f0(0x2d6)](_0x10442a=>(_0x10442a[a0_0x22c6f0(0xfd)]??null)===(_0x3f1bea??null)),COLORS=['c0','c1','c2','c3','c4','c5'],EMOJI_DATA=[['🏠',a0_0x22c6f0(0x25d),'hus',a0_0x22c6f0(0x2ee)],['🏫','skola',a0_0x22c6f0(0x2a5)],['😊',a0_0x22c6f0(0x29b),a0_0x22c6f0(0x1ff),a0_0x22c6f0(0x15c)],['🚽',a0_0x22c6f0(0x11a),a0_0x22c6f0(0x19f),a0_0x22c6f0(0x12f),'wc','toa'],['🍽️',a0_0x22c6f0(0x1ba),a0_0x22c6f0(0x200),'tallrik'],['🌳',a0_0x22c6f0(0x10e),'natur',a0_0x22c6f0(0x2d3)],['🎮','spela',a0_0x22c6f0(0x257),a0_0x22c6f0(0x135)],['📚',a0_0x22c6f0(0x221),a0_0x22c6f0(0x1e4),'studera'],['🎨',a0_0x22c6f0(0x1a3),a0_0x22c6f0(0x2de),a0_0x22c6f0(0x186)],['🚗','bil','köra',a0_0x22c6f0(0x260)],['💊',a0_0x22c6f0(0x285),a0_0x22c6f0(0x1e7),a0_0x22c6f0(0x12c)],['🛁','bada',a0_0x22c6f0(0x24d)],['🐶','hund',a0_0x22c6f0(0x2be)],['🎵',a0_0x22c6f0(0x278),a0_0x22c6f0(0x157),a0_0x22c6f0(0x224)],['⚽','fotboll',a0_0x22c6f0(0x203),a0_0x22c6f0(0x2f9)],['🌈',a0_0x22c6f0(0x207),a0_0x22c6f0(0x2d0)],['🧸','nalle',a0_0x22c6f0(0x26f),a0_0x22c6f0(0x2e8)],['🍎',a0_0x22c6f0(0x12d),'frukt'],['😴','sova',a0_0x22c6f0(0x255),'sömnig',a0_0x22c6f0(0x2ba)],['😢',a0_0x22c6f0(0x1bc),a0_0x22c6f0(0x183),'arg',a0_0x22c6f0(0x11d)],['😡',a0_0x22c6f0(0x2e9),a0_0x22c6f0(0x2af),a0_0x22c6f0(0x291)],['😂','skratta',a0_0x22c6f0(0x156),a0_0x22c6f0(0x1e0)],['❤️',a0_0x22c6f0(0x2e3),a0_0x22c6f0(0x2ae),a0_0x22c6f0(0x138)],['⭐',a0_0x22c6f0(0x2f7),a0_0x22c6f0(0x237),a0_0x22c6f0(0x14d)],['🌙','natt',a0_0x22c6f0(0x210),a0_0x22c6f0(0x2c0)],['☀️',a0_0x22c6f0(0x1f3),a0_0x22c6f0(0x18a),a0_0x22c6f0(0x254),a0_0x22c6f0(0x10a)],['🌧️',a0_0x22c6f0(0x112),'regnig','väder'],['❄️',a0_0x22c6f0(0x26d),a0_0x22c6f0(0x2ce),a0_0x22c6f0(0x1cd),'is'],['🔥','eld','varmt',a0_0x22c6f0(0x29f)],['🎂',a0_0x22c6f0(0x26a),a0_0x22c6f0(0x1c8),'kaka'],['🍕',a0_0x22c6f0(0x19a),a0_0x22c6f0(0x1ba)],['🍔','hamburgare',a0_0x22c6f0(0x1ba)],['🍜',a0_0x22c6f0(0x142),a0_0x22c6f0(0x292),a0_0x22c6f0(0x1ba)],['🥛',a0_0x22c6f0(0x2b7),'dricka'],['🧃',a0_0x22c6f0(0x17f),a0_0x22c6f0(0x124),a0_0x22c6f0(0x148)],['🍌',a0_0x22c6f0(0x16f),a0_0x22c6f0(0x14e)],['🍓','jordgubbe',a0_0x22c6f0(0x14e),a0_0x22c6f0(0x2ca)],['🥕',a0_0x22c6f0(0x12a),a0_0x22c6f0(0x139)],['🧁',a0_0x22c6f0(0x23d),a0_0x22c6f0(0x2b8),'söt'],['🍦',a0_0x22c6f0(0x26c),a0_0x22c6f0(0x165),a0_0x22c6f0(0x282)],['🐱','katt',a0_0x22c6f0(0x2a3)],['🐰',a0_0x22c6f0(0x1f0),a0_0x22c6f0(0x11c)],['🐸',a0_0x22c6f0(0x21b),a0_0x22c6f0(0x1ae)],['🦁','lejon',a0_0x22c6f0(0x259)],['🐘','elefant',a0_0x22c6f0(0x2ec),a0_0x22c6f0(0x11b)],['🦋',a0_0x22c6f0(0x1ec),'insekt',a0_0x22c6f0(0x2b9)],['🐟',a0_0x22c6f0(0x1d1),a0_0x22c6f0(0xf8),a0_0x22c6f0(0x27f)],['🦄',a0_0x22c6f0(0x1bf),'magisk'],['🐔',a0_0x22c6f0(0x108),'fågel'],['🐺',a0_0x22c6f0(0x20b),'djur'],['👕',a0_0x22c6f0(0x1aa),a0_0x22c6f0(0x288)],['👟',a0_0x22c6f0(0x120),a0_0x22c6f0(0x288),'springa'],['🎒',a0_0x22c6f0(0x151),'skola',a0_0x22c6f0(0x195)],[a0_0x22c6f0(0x28b),a0_0x22c6f0(0x149),'sova',a0_0x22c6f0(0x24e)],['🪥',a0_0x22c6f0(0x1f2),a0_0x22c6f0(0x2ac),'borsta'],['🧴','tvål',a0_0x22c6f0(0x126),'hygien'],['🚿',a0_0x22c6f0(0x192),a0_0x22c6f0(0x126),'hygien'],['🪞',a0_0x22c6f0(0x1c2),a0_0x22c6f0(0x179)],['🚪',a0_0x22c6f0(0x216),a0_0x22c6f0(0x2f2),a0_0x22c6f0(0x191)],['🛋️',a0_0x22c6f0(0x136),'sitta','vila'],['✏️',a0_0x22c6f0(0x1b3),a0_0x22c6f0(0x1b8),a0_0x22c6f0(0x186)],['📏',a0_0x22c6f0(0x143),a0_0x22c6f0(0x2df),a0_0x22c6f0(0x1e9)],['🖍️',a0_0x22c6f0(0x168),a0_0x22c6f0(0x194),a0_0x22c6f0(0x186)],['📐','vinkelhake',a0_0x22c6f0(0x1e9),a0_0x22c6f0(0x2df)],['🔔',a0_0x22c6f0(0x230),a0_0x22c6f0(0x180),a0_0x22c6f0(0x226)],['📱',a0_0x22c6f0(0x130),'mobil'],['💻',a0_0x22c6f0(0x234),a0_0x22c6f0(0x1b8)],['🎸',a0_0x22c6f0(0xfe),a0_0x22c6f0(0x278)],['🥁','trummor','musik'],['🎹',a0_0x22c6f0(0x23b),'musik'],['🚌','buss',a0_0x22c6f0(0x260),a0_0x22c6f0(0x1fa)],['🚲','cykel',a0_0x22c6f0(0x29e),a0_0x22c6f0(0x260)],['✈️',a0_0x22c6f0(0x152),'resa',a0_0x22c6f0(0x27c)],['🚑',a0_0x22c6f0(0x1e2),a0_0x22c6f0(0x2b2),a0_0x22c6f0(0x28c)],['🏥',a0_0x22c6f0(0x2b2),'doktor','sjuk'],['🏪',a0_0x22c6f0(0x25e),a0_0x22c6f0(0x222),'butik'],['🌺',a0_0x22c6f0(0x236),a0_0x22c6f0(0x2b9),a0_0x22c6f0(0x129)],['🌻',a0_0x22c6f0(0x1fe),'blomma','gul'],['🍀',a0_0x22c6f0(0x2ed),a0_0x22c6f0(0x1ae),'tur'],['🌵','kaktus',a0_0x22c6f0(0x134),a0_0x22c6f0(0x29d)],['🎄',a0_0x22c6f0(0x155),'jul',a0_0x22c6f0(0x1ae)],[a0_0x22c6f0(0x2b4),a0_0x22c6f0(0x13e),a0_0x22c6f0(0xf8),a0_0x22c6f0(0x14f),a0_0x22c6f0(0x1f3)],[a0_0x22c6f0(0x14a),a0_0x22c6f0(0x2b5),'natur','högt'],['🎡',a0_0x22c6f0(0x262),a0_0x22c6f0(0x272),'rolig'],['🏊',a0_0x22c6f0(0x27f),a0_0x22c6f0(0x283),'vatten'],['🚴',a0_0x22c6f0(0x29e),a0_0x22c6f0(0x24c)],[a0_0x22c6f0(0x205),a0_0x22c6f0(0x199),'träning',a0_0x22c6f0(0x2a8)],['🤸','gymnastik','sport',a0_0x22c6f0(0x220)],['💪','stark',a0_0x22c6f0(0x115),a0_0x22c6f0(0x237)],['👋','hej',a0_0x22c6f0(0x284),a0_0x22c6f0(0x252)],['🙏',a0_0x22c6f0(0x2e0),a0_0x22c6f0(0x10b),'be'],['👀','se',a0_0x22c6f0(0x179),a0_0x22c6f0(0x132)],['💤',a0_0x22c6f0(0x2c0),'trött','vila'],['🤒',a0_0x22c6f0(0x2bd),a0_0x22c6f0(0x295),a0_0x22c6f0(0x282)],['🩹','plåster',a0_0x22c6f0(0x25b),'ont'],['💉',a0_0x22c6f0(0x21c),'vaccination',a0_0x22c6f0(0x2bd)],['🩺',a0_0x22c6f0(0xf9),a0_0x22c6f0(0x281),'undersökning'],['🧩','pussel',a0_0x22c6f0(0x257),'leka'],['🎯','mål',a0_0x22c6f0(0x182)],['🏆',a0_0x22c6f0(0x1ca),a0_0x22c6f0(0x2ef),a0_0x22c6f0(0x17b),'mästare'],['🥇',a0_0x22c6f0(0x14d),a0_0x22c6f0(0x1ca),a0_0x22c6f0(0x17b)],['🎁','present',a0_0x22c6f0(0x2cf),'födelsedag'],['🎉','fest',a0_0x22c6f0(0x172),a0_0x22c6f0(0x1e0)],['🎈',a0_0x22c6f0(0x1db),a0_0x22c6f0(0x178),a0_0x22c6f0(0x172)],['🔑','nyckel',a0_0x22c6f0(0x2f2),a0_0x22c6f0(0x162)],['🪴',a0_0x22c6f0(0x18e),a0_0x22c6f0(0x236),'inne'],['🧺',a0_0x22c6f0(0x1d5),a0_0x22c6f0(0x20f)],['🧹',a0_0x22c6f0(0x15f),a0_0x22c6f0(0x1c4),'rent'],['🍳',a0_0x22c6f0(0x225),a0_0x22c6f0(0x2a9),a0_0x22c6f0(0x1d2)],['☕',a0_0x22c6f0(0x28d),a0_0x22c6f0(0x254),'dricka'],['🥱',a0_0x22c6f0(0x2d9),a0_0x22c6f0(0x255),a0_0x22c6f0(0x233)],['🤗',a0_0x22c6f0(0x10d),'glad',a0_0x22c6f0(0x27e)],['😰',a0_0x22c6f0(0x13d),a0_0x22c6f0(0x23e),a0_0x22c6f0(0x18f)],['🤔',a0_0x22c6f0(0x208),'tänka'],['🤢',a0_0x22c6f0(0x2e5),a0_0x22c6f0(0x105),a0_0x22c6f0(0x2bd)],['😱','rädd',a0_0x22c6f0(0x201),a0_0x22c6f0(0x125)],['🥳',a0_0x22c6f0(0x172),a0_0x22c6f0(0x178),a0_0x22c6f0(0x29b)],['😎',a0_0x22c6f0(0x158),a0_0x22c6f0(0x271)],['🤓',a0_0x22c6f0(0x251),a0_0x22c6f0(0x2a4),a0_0x22c6f0(0x10c)],['😇','snäll',a0_0x22c6f0(0x170)],['🥰',a0_0x22c6f0(0x2e3),a0_0x22c6f0(0x165),'glad'],['😤',a0_0x22c6f0(0x19e),a0_0x22c6f0(0x2e9),a0_0x22c6f0(0x16d)],['🙄','trött',a0_0x22c6f0(0x132),'trist'],['😶',a0_0x22c6f0(0x1b5),a0_0x22c6f0(0x28f),a0_0x22c6f0(0x114)],['🤐',a0_0x22c6f0(0x1b5),a0_0x22c6f0(0x28f),'prata\x20inte'],['😬',a0_0x22c6f0(0x13d),a0_0x22c6f0(0xf0)],['🤧','nysning',a0_0x22c6f0(0x145),a0_0x22c6f0(0x2bd)],['🤮',a0_0x22c6f0(0x105),'illamående',a0_0x22c6f0(0x2bd)],['🥵',a0_0x22c6f0(0x27e),a0_0x22c6f0(0x1c9),'svett'],['🥶',a0_0x22c6f0(0x282),a0_0x22c6f0(0x140),'frusen'],['🫁',a0_0x22c6f0(0xe4),'andas'],['🧠',a0_0x22c6f0(0x2b0),'tänka','smart'],['🦷',a0_0x22c6f0(0x2c2),a0_0x22c6f0(0x2ac)],[a0_0x22c6f0(0x15a),a0_0x22c6f0(0x150),'se',a0_0x22c6f0(0x179)],['👃',a0_0x22c6f0(0x102),a0_0x22c6f0(0x1eb)],['👅','tunga',a0_0x22c6f0(0x1b0)],['🤲',a0_0x22c6f0(0x238),a0_0x22c6f0(0x1be)],['🫶',a0_0x22c6f0(0x2ae),'händer','kärlek'],['🙌','klappar','bra','hurra'],['👏',a0_0x22c6f0(0x247),'bra',a0_0x22c6f0(0x258)],['✌️',a0_0x22c6f0(0x227),a0_0x22c6f0(0x104),a0_0x22c6f0(0x28a)],['🎓',a0_0x22c6f0(0x17c),a0_0x22c6f0(0x212),a0_0x22c6f0(0x1e9)],['🏡',a0_0x22c6f0(0x106),'hem','trädgård'],[a0_0x22c6f0(0x206),'termometer','feber',a0_0x22c6f0(0x117)]];function buildEmojis(_0xc64ffb=''){const _0xcd65be=a0_0x22c6f0,_0xbbe2a7=document[_0xcd65be(0x280)](_0xcd65be(0x13a));_0xbbe2a7[_0xcd65be(0x12e)]='';const _0x2d6243=_0xc64ffb[_0xcd65be(0x274)]()[_0xcd65be(0x242)](),_0x474e22=_0x2d6243?EMOJI_DATA[_0xcd65be(0x2d6)](_0x59a518=>_0x59a518[_0xcd65be(0x169)](0x1)['some'](_0x1f6f8a=>_0x1f6f8a['includes'](_0x2d6243))):EMOJI_DATA;if(_0x474e22[_0xcd65be(0x2e4)]===0x0){const _0x5311cd=document[_0xcd65be(0x164)]('div');_0x5311cd['style'][_0xcd65be(0x122)]=_0xcd65be(0x1a8),_0x5311cd[_0xcd65be(0x103)]=_0xcd65be(0x14b),_0xbbe2a7['appendChild'](_0x5311cd);return;}_0x474e22[_0xcd65be(0x2c3)](_0xb61719=>{const _0x11f49a=_0xcd65be,_0x3271b6=_0xb61719[0x0],_0x573260=document['createElement'](_0x11f49a(0xea));_0x573260[_0x11f49a(0x181)]=_0x11f49a(0xf5),_0x573260[_0x11f49a(0x103)]=_0x3271b6;if(pEmoji===_0x3271b6)_0x573260[_0x11f49a(0x25a)][_0x11f49a(0x17a)]('sel');_0x573260[_0x11f49a(0x189)](_0x11f49a(0x23a),()=>{const _0x1bd666=_0x11f49a;pEmoji=_0x3271b6,_0xbbe2a7[_0x1bd666(0x25c)](_0x1bd666(0x1bd))[_0x1bd666(0x2c3)](_0x5427c0=>_0x5427c0['classList']['remove'](_0x1bd666(0x264))),_0x573260[_0x1bd666(0x25a)]['add']('sel');}),_0xbbe2a7[_0x11f49a(0x265)](_0x573260);});}document[a0_0x22c6f0(0x280)](a0_0x22c6f0(0x20d))[a0_0x22c6f0(0x189)](a0_0x22c6f0(0x277),function(){const _0x3ecdc4=a0_0x22c6f0;buildEmojis(this[_0x3ecdc4(0x19c)]);});const toastEl=document[a0_0x22c6f0(0x280)](a0_0x22c6f0(0x1cc));function toast(_0x2e477f){const _0x1f6acd=a0_0x22c6f0;toastEl['textContent']=_0x2e477f,toastEl[_0x1f6acd(0x25a)][_0x1f6acd(0x17a)]('show'),setTimeout(()=>toastEl[_0x1f6acd(0x25a)]['remove'](_0x1f6acd(0x161)),0x8fc);}const grid=document['getElementById'](a0_0x22c6f0(0x22c)),emptyEl=document[a0_0x22c6f0(0x280)]('empty'),appTitle=document[a0_0x22c6f0(0x280)](a0_0x22c6f0(0x218)),backBtn=document['getElementById'](a0_0x22c6f0(0x2cc));function render(){const _0x220e77=a0_0x22c6f0;grid[_0x220e77(0x25c)](_0x220e77(0x2f5))[_0x220e77(0x2c3)](_0x33492a=>_0x33492a['remove']());const _0x26f4ee=nav[_0x220e77(0x2e4)]?nav[nav['length']-0x1]:null;if(_0x26f4ee){appTitle['innerHTML']='';const _0x3c8235=document['createElement'](_0x220e77(0x1f1));_0x3c8235[_0x220e77(0x181)]='title-text',_0x3c8235[_0x220e77(0x103)]=(_0x26f4ee[_0x220e77(0x24b)]||'📁')+'\x20'+_0x26f4ee[_0x220e77(0x2eb)],appTitle[_0x220e77(0x265)](_0x3c8235);}else appTitle['innerHTML']=_0x220e77(0x123);backBtn['classList'][_0x220e77(0x2d5)]('hidden',nav[_0x220e77(0x2e4)]===0x0);const _0x35670c=kids(pid());if(!_0x35670c[_0x220e77(0x2e4)]){emptyEl[_0x220e77(0x1a5)][_0x220e77(0x167)]='',emptyEl[_0x220e77(0x127)]('h2')[_0x220e77(0x103)]=nav[_0x220e77(0x2e4)]?_0x220e77(0x119):'Välkommen!',emptyEl[_0x220e77(0x127)]('p')[_0x220e77(0x12e)]=!isAdult&&!all['length']?_0x220e77(0x196):isAdult?_0x220e77(0x173):'';return;}emptyEl[_0x220e77(0x1a5)]['display']=_0x220e77(0x1ea),_0x35670c[_0x220e77(0x2c3)](_0x48aa17=>{const _0x1ab7a2=_0x220e77,_0x26aa94=_0x48aa17[_0x1ab7a2(0x232)]===_0x1ab7a2(0x29c),_0x57bd47=document[_0x1ab7a2(0x164)](_0x1ab7a2(0xfb));_0x57bd47[_0x1ab7a2(0x181)]=_0x1ab7a2(0x215)+COLORS[(_0x48aa17['id']||0x0)%0x6]+(_0x26aa94?_0x1ab7a2(0x1ab):'');const _0x2f5ed6=document['createElement'](_0x1ab7a2(0xfb));_0x2f5ed6[_0x1ab7a2(0x181)]=_0x1ab7a2(0x213);if(_0x48aa17[_0x1ab7a2(0x28e)]){const _0x4d583d=document[_0x1ab7a2(0x164)](_0x1ab7a2(0x1de));_0x4d583d['src']=_0x48aa17[_0x1ab7a2(0x28e)],_0x4d583d[_0x1ab7a2(0x299)]=_0x48aa17[_0x1ab7a2(0x2eb)],_0x2f5ed6[_0x1ab7a2(0x265)](_0x4d583d);}else{const _0x1f6325=document[_0x1ab7a2(0x164)]('div');_0x1f6325[_0x1ab7a2(0x181)]=_0x1ab7a2(0x16e),_0x1f6325[_0x1ab7a2(0x103)]=_0x48aa17[_0x1ab7a2(0x24b)]||(_0x26aa94?'📁':'🖼️'),_0x2f5ed6[_0x1ab7a2(0x265)](_0x1f6325);}_0x57bd47['appendChild'](_0x2f5ed6);const _0x2c07d2=document[_0x1ab7a2(0x164)](_0x1ab7a2(0xfb));_0x2c07d2['className']=_0x1ab7a2(0x198),_0x2c07d2[_0x1ab7a2(0x103)]=_0x48aa17['name']||'…',_0x57bd47['appendChild'](_0x2c07d2);if(_0x26aa94){const _0x5ac38b=document[_0x1ab7a2(0x164)](_0x1ab7a2(0xfb));_0x5ac38b[_0x1ab7a2(0x181)]=_0x1ab7a2(0x15e),_0x5ac38b[_0x1ab7a2(0x103)]='▶',_0x57bd47[_0x1ab7a2(0x265)](_0x5ac38b);}else{if(_0x48aa17[_0x1ab7a2(0x1d8)]){const _0x28b86f=document[_0x1ab7a2(0x164)](_0x1ab7a2(0xfb));_0x28b86f[_0x1ab7a2(0x181)]=_0x1ab7a2(0x2f0),_0x28b86f['textContent']='🔊',_0x57bd47['appendChild'](_0x28b86f);}}const _0x1a20bb=document[_0x1ab7a2(0x164)](_0x1ab7a2(0xea));_0x1a20bb[_0x1ab7a2(0x181)]=_0x1ab7a2(0x1dc),_0x1a20bb[_0x1ab7a2(0x103)]='✕',_0x1a20bb[_0x1ab7a2(0x189)](_0x1ab7a2(0x23a),async _0x306091=>{const _0xfe8536=_0x1ab7a2;_0x306091['stopPropagation'](),_0x306091['preventDefault']();if(!isAdult)return;const _0x294cad=_0x26aa94?all[_0xfe8536(0x2d6)](_0x31d393=>_0x31d393[_0xfe8536(0xfd)]===_0x48aa17['id'])[_0xfe8536(0x2e4)]:0x0,_0x362c28=_0x26aa94&&_0x294cad>0x0?_0xfe8536(0x2dd)+_0x48aa17['name']+_0xfe8536(0x244)+_0x294cad+_0xfe8536(0x1d3):_0xfe8536(0x2dd)+_0x48aa17['name']+'\x22?',_0xdc6ba0=await customConfirm(_0x362c28);_0xdc6ba0&&(await delRecursive(_0x48aa17['id']),render(),toast(_0xfe8536(0x110)));}),_0x57bd47[_0x1ab7a2(0x265)](_0x1a20bb);const _0x51e0ef=document[_0x1ab7a2(0x164)](_0x1ab7a2(0xea));_0x51e0ef[_0x1ab7a2(0x181)]=_0x1ab7a2(0x2b6),_0x51e0ef[_0x1ab7a2(0x103)]='✏️',_0x51e0ef[_0x1ab7a2(0x189)](_0x1ab7a2(0x23a),_0x18d445=>{const _0x464d1f=_0x1ab7a2;_0x18d445[_0x464d1f(0x268)](),_0x18d445['preventDefault']();if(!isAdult)return;openEditModal(_0x48aa17);}),_0x57bd47[_0x1ab7a2(0x265)](_0x51e0ef),_0x57bd47['addEventListener'](_0x1ab7a2(0x23a),()=>{if(_0x26aa94)nav['push']({'id':_0x48aa17['id'],'name':_0x48aa17['name'],'emoji':_0x48aa17['emoji']}),render();else playCard(_0x48aa17,_0x57bd47);}),grid[_0x1ab7a2(0x265)](_0x57bd47);});}function playCard(_0x57947f,_0xea5669){const _0x397df2=a0_0x22c6f0;curAudio&&(curAudio[_0x397df2(0x296)](),curAudio=null);_0xea5669[_0x397df2(0x25a)][_0x397df2(0x17a)](_0x397df2(0xe6)),setTimeout(()=>_0xea5669['classList'][_0x397df2(0x111)]('playing'),0x1a4);if(_0x57947f['audioData']){const _0x49e77c=new Audio(_0x57947f['audioData']);curAudio=_0x49e77c,_0x49e77c[_0x397df2(0x219)]()['catch'](()=>toast(_0x397df2(0x118)));}else{if(_0x397df2(0xfa)in window&&_0x57947f['name']){const _0x1e83de=new SpeechSynthesisUtterance(_0x57947f[_0x397df2(0x2eb)]);_0x1e83de[_0x397df2(0x286)]='sv-SE',_0x1e83de['rate']=0.85,_0x1e83de['pitch']=1.1,speechSynthesis['speak'](_0x1e83de);}else toast(_0x397df2(0x22f));}}async function delRecursive(_0x3e1902){const _0x55b83d=a0_0x22c6f0;for(const _0x55665b of all[_0x55b83d(0x2d6)](_0x40558a=>_0x40558a[_0x55b83d(0xfd)]===_0x3e1902))await delRecursive(_0x55665b['id']);await dbDel(_0x3e1902),all=all[_0x55b83d(0x2d6)](_0x20171e=>_0x20171e['id']!==_0x3e1902);}backBtn[a0_0x22c6f0(0x189)](a0_0x22c6f0(0x23a),()=>{const _0x34462e=a0_0x22c6f0;nav[_0x34462e(0x2c6)](),render();});let yesNoPlayer=null;function playYesNo(_0x4bf44f,_0x2bbf43){const _0x49a812=a0_0x22c6f0,_0x5b4e8a=localStorage[_0x49a812(0x240)](_0x4bf44f);if(_0x5b4e8a)try{yesNoPlayer&&yesNoPlayer[_0x49a812(0x296)]();yesNoPlayer=new Audio(_0x5b4e8a),yesNoPlayer[_0x49a812(0x219)]();return;}catch(_0x18a7ad){}speak(_0x2bbf43);}document[a0_0x22c6f0(0x280)](a0_0x22c6f0(0xf1))[a0_0x22c6f0(0x189)](a0_0x22c6f0(0x23a),()=>playYesNo(a0_0x22c6f0(0x267),'Ja')),document[a0_0x22c6f0(0x280)](a0_0x22c6f0(0x269))[a0_0x22c6f0(0x189)](a0_0x22c6f0(0x23a),()=>playYesNo(a0_0x22c6f0(0x2c9),a0_0x22c6f0(0x21d)));function speak(_0x5b3f57){const _0x26d829=a0_0x22c6f0;if(!(_0x26d829(0xfa)in window))return;const _0x2db3bd=new SpeechSynthesisUtterance(_0x5b3f57);_0x2db3bd['lang']=_0x26d829(0x16c),_0x2db3bd['rate']=0.85,speechSynthesis[_0x26d829(0xe8)](_0x2db3bd);}let ynMediaRec=null,ynChunks=[],ynTarget=null;function ynUpdateUI(){const _0x5763bd=a0_0x22c6f0,_0x4cdb41=localStorage[_0x5763bd(0x240)](_0x5763bd(0x267)),_0x43e6b2=localStorage[_0x5763bd(0x240)](_0x5763bd(0x2c9)),_0x498ba9=document[_0x5763bd(0x280)]('yesAudPrev'),_0x3ade4f=document['getElementById'](_0x5763bd(0x166));_0x4cdb41?(_0x498ba9[_0x5763bd(0x159)]=_0x4cdb41,_0x498ba9[_0x5763bd(0x1a5)][_0x5763bd(0x167)]=_0x5763bd(0x202),document['getElementById'](_0x5763bd(0x2d2))[_0x5763bd(0x1a5)][_0x5763bd(0x167)]=''):(_0x498ba9[_0x5763bd(0x1a5)][_0x5763bd(0x167)]='none',_0x498ba9[_0x5763bd(0x2c7)](_0x5763bd(0x159)),document[_0x5763bd(0x280)](_0x5763bd(0x2d2))[_0x5763bd(0x1a5)][_0x5763bd(0x167)]=_0x5763bd(0x1ea)),_0x43e6b2?(_0x3ade4f[_0x5763bd(0x159)]=_0x43e6b2,_0x3ade4f['style'][_0x5763bd(0x167)]='block',document[_0x5763bd(0x280)](_0x5763bd(0x294))[_0x5763bd(0x1a5)][_0x5763bd(0x167)]=''):(_0x3ade4f[_0x5763bd(0x1a5)][_0x5763bd(0x167)]=_0x5763bd(0x1ea),_0x3ade4f[_0x5763bd(0x2c7)]('src'),document[_0x5763bd(0x280)](_0x5763bd(0x294))[_0x5763bd(0x1a5)]['display']=_0x5763bd(0x1ea));}async function ynStartRec(_0x3aa72c){const _0x3a3540=a0_0x22c6f0;try{const _0x2368c0=await navigator['mediaDevices'][_0x3a3540(0x246)]({'audio':!![]});ynTarget=_0x3aa72c,ynChunks=[];const _0x550fac=MediaRecorder['isTypeSupported'](_0x3a3540(0x163))?{'mimeType':'audio/webm'}:{};ynMediaRec=new MediaRecorder(_0x2368c0,_0x550fac),ynMediaRec[_0x3a3540(0x188)]=_0x897805=>{const _0x5cb230=_0x3a3540;if(_0x897805[_0x5cb230(0x241)][_0x5cb230(0x109)]>0x0)ynChunks[_0x5cb230(0x1a0)](_0x897805[_0x5cb230(0x241)]);},ynMediaRec[_0x3a3540(0x290)]=()=>{const _0x221225=_0x3a3540;_0x2368c0['getTracks']()[_0x221225(0x2c3)](_0x226653=>_0x226653[_0x221225(0x1f7)]());const _0x402ba1=new Blob(ynChunks,{'type':ynMediaRec[_0x221225(0x187)]||_0x221225(0x163)}),_0x98e415=new FileReader();_0x98e415[_0x221225(0x1c6)]=_0x1856d=>{const _0x465696=_0x221225;try{localStorage[_0x465696(0x1ad)](ynTarget==='yes'?_0x465696(0x267):'bildstod_no_audio',_0x1856d[_0x465696(0x22b)][_0x465696(0x1b9)]),ynUpdateUI(),toast(_0x465696(0x297));}catch(_0x14bde8){toast(_0x465696(0x1e5));}},_0x98e415[_0x221225(0x1a2)](_0x402ba1),document[_0x221225(0x280)](_0x221225(0x2f1))[_0x221225(0x1a5)]['display']=_0x221225(0x1ea),document['getElementById'](_0x221225(0x27a))[_0x221225(0x1a5)][_0x221225(0x167)]='',document['getElementById']('recNoBtn')[_0x221225(0x1a5)][_0x221225(0x167)]='';},ynMediaRec[_0x3a3540(0x245)](),document[_0x3a3540(0x280)](_0x3a3540(0x2f1))[_0x3a3540(0x1a5)][_0x3a3540(0x167)]='',document['getElementById']('recYesBtn')['style'][_0x3a3540(0x167)]=_0x3a3540(0x1ea),document[_0x3a3540(0x280)](_0x3a3540(0x1cf))[_0x3a3540(0x1a5)]['display']='none';}catch{toast(_0x3a3540(0x13b));}}document[a0_0x22c6f0(0x280)](a0_0x22c6f0(0x27a))[a0_0x22c6f0(0x189)](a0_0x22c6f0(0x23a),()=>ynStartRec(a0_0x22c6f0(0x1cb))),document[a0_0x22c6f0(0x280)](a0_0x22c6f0(0x1cf))['addEventListener'](a0_0x22c6f0(0x23a),()=>ynStartRec('no')),document['getElementById'](a0_0x22c6f0(0x20e))[a0_0x22c6f0(0x189)](a0_0x22c6f0(0x23a),()=>{const _0x3b437a=a0_0x22c6f0;if(ynMediaRec&&ynMediaRec[_0x3b437a(0xf7)]===_0x3b437a(0xeb))ynMediaRec[_0x3b437a(0x1f7)]();}),document[a0_0x22c6f0(0x280)](a0_0x22c6f0(0x2d2))['addEventListener'](a0_0x22c6f0(0x23a),()=>{const _0x2f198d=a0_0x22c6f0;localStorage[_0x2f198d(0x144)]('bildstod_yes_audio'),ynUpdateUI(),toast('Borttaget');}),document[a0_0x22c6f0(0x280)](a0_0x22c6f0(0x294))[a0_0x22c6f0(0x189)](a0_0x22c6f0(0x23a),()=>{const _0x48ff61=a0_0x22c6f0;localStorage['removeItem']('bildstod_no_audio'),ynUpdateUI(),toast(_0x48ff61(0x1b6));}),ynUpdateUI();const addOverlay=document[a0_0x22c6f0(0x280)](a0_0x22c6f0(0x2dc)),fileInp=document['getElementById'](a0_0x22c6f0(0x261)),audioFileInp=document[a0_0x22c6f0(0x280)](a0_0x22c6f0(0x276));let pImg=null,pAudio=null,pEmoji=null,fileTgt=null,mediaRec=null,audioChunks=[];const $=_0xa1cc2c=>document[a0_0x22c6f0(0x280)](_0xa1cc2c),stepIds=['s0','sF','sC1','sC2'];function showStep(_0x36c7b2){const _0x2fe701=a0_0x22c6f0;stepIds[_0x2fe701(0x2c3)](_0x47dfae=>$(_0x47dfae)['classList'][_0x2fe701(0x111)](_0x2fe701(0xf3))),$(_0x36c7b2)[_0x2fe701(0x25a)][_0x2fe701(0x17a)](_0x2fe701(0xf3));}function openAddModal(){const _0x10aa4b=a0_0x22c6f0;if(!isAdult)return;resetAdd(),addOverlay[_0x10aa4b(0x25a)]['add'](_0x10aa4b(0x2ad));}function a0_0xb74a(){const _0x5b738f=['AgfYzq','DhjPC3q','8j+oME+4JYbtCgvSysbPBIbPz2vU','y29UzMLYBu5V','C2TV','nta3ntG2mfHrufHxCq','y3nZvgv4Da','pgLTzYbJBgfZCZ0IDgL0BguTAwnVBIiGC3jJpsjPy29Ulte5mI5WBMCIigfSDd0IiJ48C3bHBIbJBgfZCZ0IDgL0BguTDgv4Dci+qMLSzhn0W7zKpc9ZCgfUpG','zhjPy2TH','C2TYW6rTza','DhBdPhr0yq','CxvLCNLtzwXLy3rVCG','Dg9eyxrHvvjm','DSoKEhq','Bw9YB3q','twf0','CgLSBgvY','W6rWCgXL','Aw5Uzxjive1m','A2LZCW','DgvSzwzVBG','zuzPBgvjBNb1Da','W7zNB24','ywr1Bhq','DgfNz2LN','z2fTAw5N','C29MzMe','8j+mMsbnW7zYA3qGBmoKz2u6ifddPq','W6rSC2TH','z3ldTM5ZywS','zw1VAMLsB3C','twLRCM9MB27dPxrRB21ZDcbUzwTHzcdWN46z77Ip','z2v0qwXS','BMvYDSo2CW','C3rYyw5K','zgvSzxrL','zNj5CW','BM9Kzxm','BNvKBgfY','BgLUAMfS','CMvTB3zLsxrLBq','zSo2CMT5Bgq','zxHWB3j0qNrU','C3rYAw5NAwz5','C2fMDa','C8oKBMC','8j+pLo+4JW','sw5NysbLBw9QAxmGAgL0DgfKzxm','C3vWCg9YDej0BG','z3vSza','zNj1A3q','C29TBwfY','W7zNyq','CNLNz3pdPgnR','zMX5z3bSyw4','vg9HBgv0Da','BM93','ANvSz3jHBG','CM9SAwD0','C2P1BMDH','y29VBa','C3jJ','8j+rGE+4JW','yM9KEq','BSo2AMq','B2jQzwn0u3rVCMu','zM9SzgvYlwfYCM93','C29WyM9YC3rL','vgeGzw4GyMLSzcbMW7zYC3qHipcFK7C','C2HVDW','BmoLCW','yxvKAw8VD2vIBq','y3jLyxrLrwXLBwvUDa','C8o2Da','BM9bDwrqCMv2','zgLZCgXHEq','A3jPDge','C2XPy2u','BvrPDgXL','CMvZB2X2zq','C3yTu0u','zM55CW','yMLNlwvTB2PP','yMfUyw4','W6rUz2vS','CgLUvgL0Bgu','zMLYyq','vhj5y2SGphn0CM9UzZ4Rpc9ZDhjVBMC+igBdTNiGyxr0igZdPgDNysb0AwXSlG','zg93BMXVywq','ode2mZi4zKfZDvfq','zKjHy2S','rMvSifbjtI1RB2qSigBdTNjZW7zRigLNzw4','zMvZDa','DgL0Dge','ywrK','ySoKC3q','C3r1zgvUDa','zvnHDMu','B2jQzwn0u3rVCMvoyw1LCW','ANvPy2u','CMLUz2e','y2XHC3noyw1L','ChjPy2S','z3ldPxrLCG','y2fWDhvYzq','y2HHBMDL','CML0yq','BwLTzvr5Cgu','B25KyxrHyxzHAwXHyMXL','ywrKrxzLBNrmAxn0zw5LCG','C29SAwD0','CgfYzw50rwXLBwvUDa','oe5YBu1VrW','C2f2zvbPBKj0BG','A3j1A3BdPhH0','C3zLDhrPzW','zhjHD0LTywDL','C3tdPg5N','zhvZy2HH','zvjLy0fJDgL2zq','zSoKCMC','DSoKC2TH','tmoLCYb1ChaGDNv4zw5SW6rNzxqGkpcFLjiPpgjYpMBdTNiGyxr0igZdPgDNysb0AwXSigTVCNqU','B251CgDYywrLBMvLzgvK','y2fYzc1SywjLBa','z3LT','CgL6EMe','D2HHDhnozxDpDMvYBgf5','DMfSDwu','uMvKAwDLCMeGyMLSzgTVCNq','zNj1C3rLCMfK','yMfQC2e','ChvZAa','yMLSzhn0B2rFC2vLBL92zxjZAw9U','CMvHzefZrgf0yvvsta','BCoLBge','CgLUrxjYB3i','C3r5Bgu','DgHLtNvTCgfK','ueLolwTVzgvYBMeGBwf0y2HHCIbPBNrLiq','y29SB3i6i2jIyJTMB250lxDLAwDODdO3mda7zM9UDc1ZAxPLoI45CMvTo3bHzgrPBMC6mtzWEcaXmhb4o3DOAxrLlxnWywnLoM5VD3jHCa','yu1PBMK','DhldTMPH','igzVBgrLCG','D2fYBG','C2v0sxrLBq','z3ldTM4','CMvJqwn0AxzL','C21HA2e','z29bDwrPBW','x2jSyw5R','CgvUBMe','ywr1BhqTBw9Kzq','DhLZDa','qM9YDhrHz2v0','zvbOB3rVqxjLyq','C2TYAxzH','CMvZDwX0','Bwf0','DMLZAwjPBgL0Evn0yxrL','BgvKC2vU','lMvVChq','AmoLBgXH','zw5OW7zYBMLUzW','CMvHzhDYAxrL','B25JB21WBgv0zq','C3bLz2vS','rMvSihzPzcddPxrLCNn0W6rSBg5PBMC6ia','C3tdPgrH','lM51BxbHzc1IDg5Bzgf0ys1Uxq','B25SB2fK','Aw1WB3j0qNrU','zSo2zgvSC2vKywC','Agv0','DMLUBMe','EwvZ','Dg9HC3rfBa','A2fSBhq','zK5HBwu','CMvJtM9cDg4','C29Tzq','zMLZAW','CgfUBMTHA2e','ig9IAMvRDcK/','yMLSzhn0B2rFCgLU','A29YzW','BMv3ugLUmG','yMLSzhn0B2rFzgfYAW','yxvKAw9eyxrH','BwvZC2fNzq','AgvHzgvY','yMfSBg9UzW','y2fYzc1KzwW','z2v0q29UDgv4Da','Aw1N','CMvJswrSzq','A3vS','odq2ntKXwuX0vurw','yw1IDwXHBNm','zuvTB2PPv3jHCa','BmoKC2e','s3vUzguGAw50zsbZCgfYysdIGjmGBgP1zgv0imoKCIbMW7zYigZdPw5NDa','zu5HBwu','DgfIBgv0Da','C3CUANm','C2TVBge','BM9Uzq','BhvRDge','zMRdPhjPBa','zMLSBgvK','ndqYmJi1n3ffvhfduG','8j+oME+4JYbtCgvSysbPBIbKAxjLA3q','A2fUAw4','C3bHBG','DgfUzgjVCNn0zq','C29S','pgrPDIbJBgfZCZ0IChqTAgLUDci+phnWyw4+8j+tTZWVC3bHBJ48C21HBgW+vhj5y2SGzSo2CIbHDhqGyNL0ysbIAwXKpc9ZBwfSBd48l2rPDJ4','CgLUsgLUDa','z2v0vhjHy2TZ','C3rVCa','zvjLBw92zuf1zgLVqNrU','zgf0yxnLDa','CMvZyq','mtiZna','C29YDa','odC5mtnNBxjLEuS','C29SCM9Z','BhLJA2XPzW','W6r0yq','y2HVy2THza','yMXVy2S','C3bHCMTH','CMvJB3jKqNrU','8j+pI++4JW','8j+mOE+4JW','CMvNBMldPwDL','zNvUzgvYyq','mc4WnG','Aw1Hz2uVANbLzW','DMfYzW','CgLUt3zLCMXHEq','zw1VAMLtzwfYy2G','EwvZtM9tDg9WqNrU','DhBdPhr0','BCoLBMu','CgLUq2fUy2vS','zxHHBwvU','y2fYzc12Axn1ywW','AhjLzG','y2fYzca','zmo2CNi','CMfUzg9T','yxbWvgL0Bgu','CgXHEq','Bg9JA0j0BG','z3jVzge','C3bYDxrH','tMvQ','ntu2mZbzsfrPBeW','mtq4B0HAu3fV','CSo2CMeGC2LN','ySo2y2TLCG','AgfUzgXH','zLbOB3rVqxjLyq','C8oLBMC','C3rLA2e','BgP1za','zNjLza','ywrKqNrU','D2fRzuXVy2S','CMvHzg9UBhK','DgfYz2v0','z3jPza','8j+oME+4JYbtCgvSysbPBIbLz2vUihldTNn0igBdTNiG8j+rJsbVy2GG8j+rJG','mZmWotC5mLrvvxLRCa','sw5NzxqGBgP1zcbPBNnWzwXHDcdWN5sh','A2XVy2TH','tNL0DcbIAwXKA29YDa','DhLWzq','Dxr0CSoLA2fK','zgf0B3i','C3rVCej0BG','yMXVBw1H','yNjH','AmoKBMrLCG','igTVCNq/ierLDhrHigvYC8oKDhrLCIbHBgXHig51DMfYyw5KzsbRB3j0lG','y2XPy2S','CgLHBM8','Aw1WB3j0rMLSzuLUChv0','BxvMzMLUCW','CSoKzgq','tgP1C3qGBmoKz2uGCmoLiokyGo+4JW','z2v0sxrLBq','zgf0yq','DhjPBq','qMLSzhn0B2rwmW','iIbVy2GGywXSDcbPBNv0AsaO','C3rHCNq','z2v0vxnLCK1LzgLH','A2XHChbH','zuf1zfbYzxy','B25LCNjVCG','D25dBg9Zzq','zw1VAMK','C3bVCNq','yMfKA2fY','DMLSyq','zMLSzxm','yZfcywnR','BSo2CMrPzW','AmoKBhnH','y2HVB3nLq2fYza','DMfYBxq','DhldTNr0','zwrPDfrPDgXL','C3bLBa','yxbWBmoLza','zgP1CG','y2XHC3nmAxn0','C8oLCG','CxvLCNLtzwXLy3rVCKfSBa','AgvTBwe','ywzMW6rY','tgP1zcbIB3j0DgfNzxq','W6vRyq','zMLSzuLUChv0','CgfYAxnLCMHQDwW','D2LKDgG','C2vS','yxbWzw5Kq2HPBgq','shvTW7zY','yMLSzhn0B2rFEwvZx2f1zgLV','C3rVCfbYB3bHz2f0Aw9U','BM9cDg4','DmoLCNrH','C2vYDMLJzvDVCMTLCG','z2XHC3m','C27dTG','CgfKu3rHCNq','BgvRC2fR','DMLZAwjPBgL0EwnOyw5Nzq','C29Sz2XHC8o2z29U','BSo2AMvZzSoKBhq','t2DPBhrPzYbMAwWG4P2m','Dg9mB3DLCKnHC2u','qw5Nzsbqsu4TA29K','yxvKAw9gAwXLsw5WDxq','Aw5WDxq','BxvZAwS','zuvTB2PPuM93','CMvJwwvZqNrU','u3bLBgeGAw4GBgP1za','zMX5z2e','DhjHBNnHy3rPB24','DMfYBq','C2LTBwe','z2v0rwXLBwvUDej5swq','zg9RDg9Y','A2fSBa','Cg9VBa','DMLUA2e','BwvKAwnPBG','BgfUzW','y2HHBMDLugLUqxjLyq','A2ZdPgrLCG','y05HBwu','DhBdPq','8j+BJ++4JW','AgRdPgXW','A2fMzMu','Aw1Hz2veyxrH','BxvU','B25ZDg9W','C3vY','C29WCge','zvn0B3bcDg4','zgvStM9cDg4','zMvIzxi','Cgf1C2u','sw5ZCgvSyxqHiokCHq','Bg9JA05VD0j0BG','ywX0','BwvKAwfezxzPy2vZ','z2XHza','zM9SzgvY','W7zRzw4','y3LRBge','yNjHBMq','zgfYAW','z2v0tw9UDgG','C2TPCef1zgLV','Bw9YCMfUzgu','z2XHC8o2z29U','A2XHC3nYDw0','8j+tSsbtA8oKCM1LBIbZBg9JA25HCIbPBNrLig7dPhiGyxbWzw4Gyw52W6rUzhm','y3jLyxrLt2jQzwn0u3rVCMu','C3rHCMS','BgfNysbTyxq','y3jLyxrLzef0','yZjcywnR','DmoKBMrLCG','B3bLBG','AgRdPhj0yq','AwXZA2vU','AgRdPhjUyq','zvjLy29Yzej0BG','C2P1A2H1CW','BMv3ugLUmq','8j+pLU+4JW','yMvYzW','y2fYzc1LzgL0','BwRdTMXR','A2fRyq','DMfJA2vY','BMf0Da','rMvSoIa','qMLSzcbVy2GGBMfTBIbRCSoKDNmH','C2P1AW','DMfSCa','AxnbCNjHEq','C292yq','lMfJyY1Zzwn0Aw9U','DgfUza','zM9YrwfJAa','y2fYza','y2HVB3nLrM9SzgvY','Cg9W','CMvTB3zLqxr0CMLIDxrL','CMvXDwvZDa','yMLSzhn0B2rFBM9FyxvKAw8','ySoKCG','y1bOB3rVqxjLyq','yMfJA0j0BG','CgfYC2u','DMLUDgvY','z8oLDMe','zSoKCMDLCG','y29UDgfPBNm','zgvSwwvZqNrU','C2TVzW','tmoLC3qG8j+uKG','Dg9Nz2XL','zMLSDgvY','zvvWBg9Hzef1zgLVqNrU','DgvZDa','z8oKC3bH','y2fUDMfZ','mtHPB1nyvKK','ywrKt3zLCMXHEq','vgeGyM9YDcaI','A29UC3q','BCoKDge','C27dPgXSyq','uMvKAwDLCMeGA2f0zwDVCMK','AgvPz2H0','A8oKCMXLAW','BgvUz3rO','AwXSyw3dPwvUzgu','C2nYzwvU','y29UzMLYBu92zxjSyxK','yMRdTNjU','yxjN','yxbWBgLJyxrPB24VANnVBG','BMfTzq','C3rVCG','A2ZdTNzLCG','AgvT','DhjVzSoP','yxvKAw8TyMfKz2u','EwvZtM9szwnby3rPDMu','W7zWCg5H','yxvKuhjLDG','pgrPDIbJBgfZCZ0IChqTAgLUDci+phnWyw4+8j+tTZWVC3bHBJ48C21HBgW+vhj5y2SGzSo2CIbHDhqGDgeGyMLSzdWVC21HBgW+pc9KAxy+','lMnHCMq','sgvTBwe','C3rQW6rYBMe','tCo2CMT0igZdPgDLihddPsdWN4Yz','yM9SBa','BhvUz29Y','pgrPDIbJBgfZCZ0IChqTAgLUDci+phnWyw4+8j+tTZWVC3bHBJ48C21HBgW+qMLSzcaODMfSzNjPDhqPpc9ZBwfSBd48l2rPDJ4','CgXHEwLUzW','zxjYB3i','C3bLywS','8j+mMsbnW7zYA3qGBmoKz2u6ief2','yNv0Dg9U','CMvJB3jKAw5N','8j+uKIbwDxHLBMZdPgDL','tgP1zgzPBcbPBMZdPhn0isdINiu','u2TYAxyGzxr0ig5HBw4HiokCJ++4JW','D25mAxn0','A29UC3rPz3q','EwvZqNrU','vMvYC2LVBIa','ywn0AxzL','CMvNAxn0zxi','zw9WDa','zgfYA01VzgvcDg4','C3rHDgu','Agf2','BmoKA2fYzq','C3bLzwnOu3LUDgHLC2LZ','zgL2','DMLZAwjSzq','CgfYzw50swq','z2L0yxjY','B25ZDwnJzxnZ','zuf1zgLVrMLSzuLUChv0','lMPZB24','BSoKC2e','Dgv4DenVBNrLBNq','C2vNzxi','C3b5','AhvZ','zuvTB2PPu2vHCMnO','Amo2BMe','C2L6zq','zgfN','DgfJAW','C21HCNq','A3jHBq','DhldPgq','tmoKz2CGDgLSBa','qM9YDhrHz2v0ipcFL5hVUi8','CMvTB3zL','CMvNBG','AxnuExbLu3vWCg9YDgvK','Aw5Nzw4','BxvZA2vS','CgLUrgvS','DgvTCgvYyxr1CG','s3vUzguGAw50zsbZCgvSysbSANvK','vg9TDcbOW6rYigLUBMu','Dg9HBgv0Da','z3ldPq'];a0_0xb74a=function(){return _0x5b738f;};return a0_0xb74a();}function closeAddModal(){const _0x4fd85d=a0_0x22c6f0;addOverlay[_0x4fd85d(0x25a)]['remove'](_0x4fd85d(0x2ad)),stopRec();}function resetAdd(){const _0x20afa6=a0_0x22c6f0;pImg=null,pAudio=null,pEmoji=null,fileTgt=null,$('fName')[_0x20afa6(0x19c)]='',$(_0x20afa6(0x289))['value']='',$(_0x20afa6(0x223))[_0x20afa6(0x12e)]=_0x20afa6(0xe5),$(_0x20afa6(0x2cb))[_0x20afa6(0x12e)]=_0x20afa6(0x2f4),$('aMini')['innerHTML']='',$(_0x20afa6(0x2f3))[_0x20afa6(0x1a5)][_0x20afa6(0x167)]=_0x20afa6(0x1ea),$(_0x20afa6(0x2f3))['src']='',$(_0x20afa6(0x1df))['style'][_0x20afa6(0x167)]='',$('recActive')['style'][_0x20afa6(0x167)]=_0x20afa6(0x1ea),$(_0x20afa6(0x204))['textContent']=_0x20afa6(0x1ef),fileInp[_0x20afa6(0x19c)]='',audioFileInp['value']='';const _0x11f5dd=document['getElementById'](_0x20afa6(0x20d));if(_0x11f5dd)_0x11f5dd[_0x20afa6(0x19c)]='';buildEmojis(),showStep('s0'),$(_0x20afa6(0x16a))[_0x20afa6(0x103)]='Lägg\x20till';}$('addBtn')[a0_0x22c6f0(0x189)](a0_0x22c6f0(0x23a),openAddModal),addOverlay[a0_0x22c6f0(0x189)]('click',_0x42f5d9=>{const _0x258a50=a0_0x22c6f0;if(_0x42f5d9[_0x258a50(0x22b)]===addOverlay)closeAddModal();}),$('s0Cancel')[a0_0x22c6f0(0x189)](a0_0x22c6f0(0x23a),closeAddModal),$(a0_0x22c6f0(0x2c5))['addEventListener'](a0_0x22c6f0(0x23a),()=>{const _0x3e16de=a0_0x22c6f0;showStep('sF'),$(_0x3e16de(0x16a))['textContent']='Ny\x20kategori';}),$(a0_0x22c6f0(0x253))[a0_0x22c6f0(0x189)](a0_0x22c6f0(0x23a),()=>{const _0x3c47b2=a0_0x22c6f0;showStep('sC1'),$('mTitle')['textContent']=_0x3c47b2(0x231);}),$(a0_0x22c6f0(0x176))[a0_0x22c6f0(0x189)](a0_0x22c6f0(0x23a),()=>{const _0x389c0d=a0_0x22c6f0;showStep('s0'),$(_0x389c0d(0x16a))['textContent']=_0x389c0d(0x10f);}),$(a0_0x22c6f0(0x250))[a0_0x22c6f0(0x189)](a0_0x22c6f0(0x23a),()=>{const _0x10c2a9=a0_0x22c6f0;showStep('s0'),$('mTitle')[_0x10c2a9(0x103)]=_0x10c2a9(0x10f);}),$(a0_0x22c6f0(0x2ab))[a0_0x22c6f0(0x189)](a0_0x22c6f0(0x23a),()=>{const _0x44909d=a0_0x22c6f0;pAudio=null,$('audPrev')['style'][_0x44909d(0x167)]=_0x44909d(0x1ea),$(_0x44909d(0x1df))[_0x44909d(0x1a5)]['display']='',showStep('sC1'),$(_0x44909d(0x16a))[_0x44909d(0x103)]=_0x44909d(0x231);});function setPhotoArea(_0x490718,_0x2533b4){const _0x1edc05=a0_0x22c6f0,_0x3a8397=$(_0x490718);_0x3a8397[_0x1edc05(0x12e)]='';const _0x3f0c66=document[_0x1edc05(0x164)](_0x1edc05(0x1de));_0x3f0c66[_0x1edc05(0x159)]=_0x2533b4,_0x3a8397[_0x1edc05(0x265)](_0x3f0c66);}$(a0_0x22c6f0(0x223))['addEventListener'](a0_0x22c6f0(0x23a),()=>{const _0x3dd87a=a0_0x22c6f0;fileTgt=_0x3dd87a(0x29c),fileInp[_0x3dd87a(0x2c7)]('capture'),fileInp[_0x3dd87a(0x23a)]();}),$('cPhotoArea')[a0_0x22c6f0(0x189)](a0_0x22c6f0(0x23a),()=>{const _0x5dc679=a0_0x22c6f0;fileTgt=_0x5dc679(0x2c4),fileInp[_0x5dc679(0x2c7)](_0x5dc679(0x184)),fileInp[_0x5dc679(0x23a)]();}),fileInp[a0_0x22c6f0(0x189)](a0_0x22c6f0(0x185),()=>{const _0x137e82=a0_0x22c6f0,_0x59d50c=fileInp['files'][0x0];if(!_0x59d50c)return;const _0x3c0c45=new FileReader();_0x3c0c45[_0x137e82(0x1c6)]=_0x1a734c=>{const _0x426e13=_0x137e82,_0x190983=new Image();_0x190983[_0x426e13(0x1c6)]=()=>{const _0x2df8b2=_0x426e13,_0x3f5f3c=document['createElement'](_0x2df8b2(0x2da)),_0x31aca4=0x258;let _0x1fc75b=_0x190983['width'],_0x5d161e=_0x190983[_0x2df8b2(0x2e2)];if(_0x1fc75b>_0x5d161e&&_0x1fc75b>_0x31aca4)_0x5d161e=_0x5d161e*_0x31aca4/_0x1fc75b,_0x1fc75b=_0x31aca4;else _0x5d161e>_0x31aca4&&(_0x1fc75b=_0x1fc75b*_0x31aca4/_0x5d161e,_0x5d161e=_0x31aca4);_0x3f5f3c[_0x2df8b2(0x263)]=_0x1fc75b,_0x3f5f3c[_0x2df8b2(0x2e2)]=_0x5d161e,_0x3f5f3c[_0x2df8b2(0x1dd)]('2d')[_0x2df8b2(0x190)](_0x190983,0x0,0x0,_0x1fc75b,_0x5d161e),pImg=_0x3f5f3c[_0x2df8b2(0x128)](_0x2df8b2(0x20a),0.8);if(fileTgt==='folder')setPhotoArea(_0x2df8b2(0x223),pImg);else setPhotoArea(_0x2df8b2(0x2cb),pImg),updateAMini();},_0x190983[_0x426e13(0x159)]=_0x1a734c[_0x426e13(0x22b)][_0x426e13(0x1b9)];},_0x3c0c45['readAsDataURL'](_0x59d50c),fileInp[_0x137e82(0x19c)]='';});function updateAMini(){const _0x218443=a0_0x22c6f0,_0x282d7e=$(_0x218443(0x1a9));_0x282d7e['innerHTML']='';if(pImg){const _0x54b04b=document[_0x218443(0x164)](_0x218443(0x1de));_0x54b04b[_0x218443(0x159)]=pImg,_0x282d7e[_0x218443(0x265)](_0x54b04b);}}$('uploadAudioBtn')[a0_0x22c6f0(0x189)](a0_0x22c6f0(0x23a),()=>audioFileInp[a0_0x22c6f0(0x23a)]()),audioFileInp['addEventListener'](a0_0x22c6f0(0x185),()=>{const _0x587656=a0_0x22c6f0,_0x3910ae=audioFileInp[_0x587656(0x24f)][0x0];if(!_0x3910ae)return;const _0x592fc9=new FileReader();_0x592fc9[_0x587656(0x1c6)]=_0x15b36f=>{const _0x3f22ff=_0x587656;pAudio=_0x15b36f['target']['result'],$(_0x3f22ff(0x2f3))[_0x3f22ff(0x159)]=pAudio,$('audPrev')[_0x3f22ff(0x1a5)][_0x3f22ff(0x167)]='block',toast(_0x3f22ff(0xed));},_0x592fc9[_0x587656(0x1a2)](_0x3910ae),audioFileInp[_0x587656(0x19c)]='';}),$('saveFolder')['addEventListener'](a0_0x22c6f0(0x23a),async()=>{const _0x553453=a0_0x22c6f0;try{const _0x31f485=document[_0x553453(0x280)](_0x553453(0x1ce)),_0x1bd0bf=_0x31f485?_0x31f485[_0x553453(0x19c)][_0x553453(0x242)]():'';if(!_0x1bd0bf){toast(_0x553453(0xee));return;}const _0x128255=pid(),_0x456e05={'parentId':_0x128255,'type':_0x553453(0x29c),'name':_0x1bd0bf,'emoji':pEmoji||null,'imageData':pImg||null,'audioData':null,'createdAt':Date[_0x553453(0x154)]()},_0x334a64=await dbAdd(_0x456e05);_0x456e05['id']=_0x334a64,all[_0x553453(0x1a0)](_0x456e05),render(),closeAddModal(),toast('Kategori\x20sparad!\x20📁');}catch(_0x13f8c3){toast(_0x553453(0x2bb)+_0x13f8c3[_0x553453(0x1d9)]);}}),$(a0_0x22c6f0(0x1b1))[a0_0x22c6f0(0x189)](a0_0x22c6f0(0x23a),()=>{const _0x248e40=a0_0x22c6f0;if(!pImg){toast(_0x248e40(0x160));return;}if(!$(_0x248e40(0x289))['value'][_0x248e40(0x242)]()){toast(_0x248e40(0xee));return;}updateAMini(),showStep('sC2'),$('mTitle')[_0x248e40(0x103)]=_0x248e40(0x27b);}),$(a0_0x22c6f0(0x204))[a0_0x22c6f0(0x189)]('click',startRec),$(a0_0x22c6f0(0x235))['addEventListener'](a0_0x22c6f0(0x23a),stopRec);async function startRec(){const _0x3e47e4=a0_0x22c6f0;try{const _0x3b2ba2=await navigator[_0x3e47e4(0x29a)][_0x3e47e4(0x246)]({'audio':!![]});audioChunks=[];const _0x5b1141=MediaRecorder[_0x3e47e4(0x113)](_0x3e47e4(0x163))?{'mimeType':_0x3e47e4(0x163)}:{};mediaRec=new MediaRecorder(_0x3b2ba2,_0x5b1141),mediaRec[_0x3e47e4(0x188)]=_0x41ee29=>{const _0x54e7d2=_0x3e47e4;if(_0x41ee29[_0x54e7d2(0x241)]['size']>0x0)audioChunks[_0x54e7d2(0x1a0)](_0x41ee29[_0x54e7d2(0x241)]);},mediaRec['onstop']=()=>{const _0x32927d=_0x3e47e4;_0x3b2ba2[_0x32927d(0x1f6)]()['forEach'](_0x46a9e1=>_0x46a9e1[_0x32927d(0x1f7)]());const _0x12161f=new Blob(audioChunks,{'type':mediaRec[_0x32927d(0x187)]||_0x32927d(0x163)}),_0x480c0d=new FileReader();_0x480c0d[_0x32927d(0x1c6)]=_0x67c4dc=>{const _0x29ac2d=_0x32927d;pAudio=_0x67c4dc[_0x29ac2d(0x22b)][_0x29ac2d(0x1b9)],$(_0x29ac2d(0x2f3))[_0x29ac2d(0x159)]=pAudio,$(_0x29ac2d(0x2f3))['style']['display']=_0x29ac2d(0x202);},_0x480c0d['readAsDataURL'](_0x12161f),$(_0x32927d(0x1af))[_0x32927d(0x1a5)][_0x32927d(0x167)]='none',$(_0x32927d(0x1df))[_0x32927d(0x1a5)][_0x32927d(0x167)]='',$(_0x32927d(0x204))['textContent']=_0x32927d(0x11e);},mediaRec[_0x3e47e4(0x245)](),$(_0x3e47e4(0x1df))[_0x3e47e4(0x1a5)][_0x3e47e4(0x167)]=_0x3e47e4(0x1ea),$(_0x3e47e4(0x1af))[_0x3e47e4(0x1a5)]['display']='';}catch{toast(_0x3e47e4(0x13b));}}function stopRec(){const _0x41c731=a0_0x22c6f0;if(mediaRec&&mediaRec[_0x41c731(0xf7)]===_0x41c731(0xeb))mediaRec['stop']();}async function saveCard(_0x10886c){const _0x162624=a0_0x22c6f0;try{stopRec();const _0xc2eecb=$(_0x162624(0x289))[_0x162624(0x19c)][_0x162624(0x242)]();if(!pImg||!_0xc2eecb){toast(_0x162624(0x2bc));return;}const _0xb97964={'parentId':pid(),'type':'card','name':_0xc2eecb,'emoji':null,'imageData':pImg,'audioData':_0x10886c?null:pAudio||null,'createdAt':Date[_0x162624(0x154)]()},_0x17a33d=await dbAdd(_0xb97964);_0xb97964['id']=_0x17a33d,all[_0x162624(0x1a0)](_0xb97964),render(),closeAddModal(),toast('Bildkort\x20sparat!\x20🎉');}catch(_0x5548da){toast(_0x162624(0x2bb)+_0x5548da[_0x162624(0x1d9)]);}}$('saveCard')[a0_0x22c6f0(0x189)](a0_0x22c6f0(0x23a),()=>saveCard(![])),$(a0_0x22c6f0(0x2a2))[a0_0x22c6f0(0x189)](a0_0x22c6f0(0x23a),()=>saveCard(!![]));const editOverlay=document[a0_0x22c6f0(0x280)]('editOverlay'),eFileInput=document[a0_0x22c6f0(0x280)](a0_0x22c6f0(0x131)),eAudioFileInput=document[a0_0x22c6f0(0x280)](a0_0x22c6f0(0x100));let editNode=null,eImg=null,eAudio=null,eEmoji=null,eMediaRec=null,eAudioChunks=[];function openEditModal(_0x3b34d1){const _0x52ba45=a0_0x22c6f0;editNode=_0x3b34d1,eImg=_0x3b34d1[_0x52ba45(0x28e)]||null,eAudio=_0x3b34d1['audioData']||null,eEmoji=_0x3b34d1[_0x52ba45(0x24b)]||null;const _0x261ceb=_0x3b34d1[_0x52ba45(0x232)]===_0x52ba45(0x29c);$(_0x52ba45(0x256))[_0x52ba45(0x103)]=_0x261ceb?_0x52ba45(0x2e1):_0x52ba45(0x19d),$(_0x52ba45(0x1e6))[_0x52ba45(0x19c)]=_0x3b34d1[_0x52ba45(0x2eb)]||'';if(eImg)setPhotoArea('ePhotoArea',eImg);else $(_0x52ba45(0x1b7))['innerHTML']=_0x52ba45(0x1f4);_0x261ceb?($('eEmojiWrap')[_0x52ba45(0x1a5)][_0x52ba45(0x167)]='',$('eEmojiSearch')['value']='',buildEEmojis()):$(_0x52ba45(0x1e3))[_0x52ba45(0x1a5)][_0x52ba45(0x167)]=_0x52ba45(0x1ea),eAudio?($(_0x52ba45(0x248))[_0x52ba45(0x159)]=eAudio,$(_0x52ba45(0x248))[_0x52ba45(0x1a5)][_0x52ba45(0x167)]=_0x52ba45(0x202),$(_0x52ba45(0x1f8))[_0x52ba45(0x1a5)][_0x52ba45(0x167)]=''):($('eAudPrev')[_0x52ba45(0x1a5)]['display']='none',$(_0x52ba45(0x248))['src']='',$(_0x52ba45(0x1f8))[_0x52ba45(0x1a5)][_0x52ba45(0x167)]=_0x52ba45(0x1ea)),$('eRecActive')[_0x52ba45(0x1a5)][_0x52ba45(0x167)]=_0x52ba45(0x1ea),$('eRecordBtn')[_0x52ba45(0x103)]='🎙️\x20Spela\x20in\x20nytt\x20ljud',editOverlay[_0x52ba45(0x25a)]['add'](_0x52ba45(0x2ad));}function closeEditModal(){const _0x3296d8=a0_0x22c6f0;editOverlay[_0x3296d8(0x25a)][_0x3296d8(0x111)](_0x3296d8(0x2ad)),stopERec(),editNode=null;}editOverlay[a0_0x22c6f0(0x189)](a0_0x22c6f0(0x23a),_0xe6fc1f=>{const _0x1694c4=a0_0x22c6f0;if(_0xe6fc1f[_0x1694c4(0x22b)]===editOverlay)closeEditModal();}),$('eCancel')[a0_0x22c6f0(0x189)](a0_0x22c6f0(0x23a),closeEditModal);function buildEEmojis(_0x10e748=''){const _0x2b769d=a0_0x22c6f0,_0x2d8341=$(_0x2b769d(0x279));_0x2d8341[_0x2b769d(0x12e)]='';const _0x2826cc=_0x10e748[_0x2b769d(0x274)]()[_0x2b769d(0x242)](),_0x574929=_0x2826cc?EMOJI_DATA['filter'](_0x1f4210=>_0x1f4210['slice'](0x1)[_0x2b769d(0x1d0)](_0x2b0ba3=>_0x2b0ba3['includes'](_0x2826cc))):EMOJI_DATA;if(_0x574929[_0x2b769d(0x2e4)]===0x0){const _0x5e5d3c=document[_0x2b769d(0x164)](_0x2b769d(0xfb));_0x5e5d3c[_0x2b769d(0x1a5)][_0x2b769d(0x122)]=_0x2b769d(0x1a8),_0x5e5d3c[_0x2b769d(0x103)]=_0x2b769d(0x14b),_0x2d8341[_0x2b769d(0x265)](_0x5e5d3c);return;}_0x574929[_0x2b769d(0x2c3)](_0x3f65f7=>{const _0x2a3b9e=_0x2b769d,_0x2c054f=_0x3f65f7[0x0],_0xda7687=document[_0x2a3b9e(0x164)](_0x2a3b9e(0xea));_0xda7687[_0x2a3b9e(0x181)]=_0x2a3b9e(0xf5),_0xda7687[_0x2a3b9e(0x103)]=_0x2c054f;if(eEmoji===_0x2c054f)_0xda7687[_0x2a3b9e(0x25a)][_0x2a3b9e(0x17a)](_0x2a3b9e(0x264));_0xda7687[_0x2a3b9e(0x189)]('click',()=>{const _0x250397=_0x2a3b9e;eEmoji=_0x2c054f,_0x2d8341['querySelectorAll'](_0x250397(0x1bd))[_0x250397(0x2c3)](_0x2064d2=>_0x2064d2[_0x250397(0x25a)][_0x250397(0x111)](_0x250397(0x264))),_0xda7687['classList'][_0x250397(0x17a)](_0x250397(0x264));}),_0x2d8341[_0x2a3b9e(0x265)](_0xda7687);});}$(a0_0x22c6f0(0x107))[a0_0x22c6f0(0x189)]('input',function(){const _0x5a7971=a0_0x22c6f0;buildEEmojis(this[_0x5a7971(0x19c)]);}),$('ePhotoArea')['addEventListener'](a0_0x22c6f0(0x23a),()=>{const _0x45f8cb=a0_0x22c6f0;eFileInput[_0x45f8cb(0x2c7)](_0x45f8cb(0x184)),eFileInput[_0x45f8cb(0x23a)]();}),eFileInput['addEventListener']('change',()=>{const _0xa78bd8=a0_0x22c6f0,_0x19420b=eFileInput[_0xa78bd8(0x24f)][0x0];if(!_0x19420b)return;const _0x14af94=new FileReader();_0x14af94[_0xa78bd8(0x1c6)]=_0x492ac0=>{const _0x1d5cc1=_0xa78bd8,_0x2a759e=new Image();_0x2a759e['onload']=()=>{const _0x52a590=a0_0x4b77,_0x159ec7=document['createElement'](_0x52a590(0x2da)),_0x229ad6=0x258;let _0x31bf24=_0x2a759e['width'],_0x4aa45e=_0x2a759e[_0x52a590(0x2e2)];if(_0x31bf24>_0x4aa45e&&_0x31bf24>_0x229ad6)_0x4aa45e=_0x4aa45e*_0x229ad6/_0x31bf24,_0x31bf24=_0x229ad6;else _0x4aa45e>_0x229ad6&&(_0x31bf24=_0x31bf24*_0x229ad6/_0x4aa45e,_0x4aa45e=_0x229ad6);_0x159ec7[_0x52a590(0x263)]=_0x31bf24,_0x159ec7[_0x52a590(0x2e2)]=_0x4aa45e,_0x159ec7[_0x52a590(0x1dd)]('2d')[_0x52a590(0x190)](_0x2a759e,0x0,0x0,_0x31bf24,_0x4aa45e),eImg=_0x159ec7[_0x52a590(0x128)](_0x52a590(0x20a),0.8),setPhotoArea(_0x52a590(0x1b7),eImg),eEmoji=null;},_0x2a759e[_0x1d5cc1(0x159)]=_0x492ac0[_0x1d5cc1(0x22b)][_0x1d5cc1(0x1b9)];},_0x14af94[_0xa78bd8(0x1a2)](_0x19420b),eFileInput['value']='';}),$('eRecordBtn')[a0_0x22c6f0(0x189)](a0_0x22c6f0(0x23a),startERec),$(a0_0x22c6f0(0x293))[a0_0x22c6f0(0x189)](a0_0x22c6f0(0x23a),stopERec);async function startERec(){const _0x56b8ee=a0_0x22c6f0;try{const _0x32adf6=await navigator[_0x56b8ee(0x29a)][_0x56b8ee(0x246)]({'audio':!![]});eAudioChunks=[];const _0x278d75=MediaRecorder['isTypeSupported']('audio/webm')?{'mimeType':'audio/webm'}:{};eMediaRec=new MediaRecorder(_0x32adf6,_0x278d75),eMediaRec['ondataavailable']=_0x50eab3=>{const _0x18570b=_0x56b8ee;if(_0x50eab3[_0x18570b(0x241)][_0x18570b(0x109)]>0x0)eAudioChunks['push'](_0x50eab3[_0x18570b(0x241)]);},eMediaRec[_0x56b8ee(0x290)]=()=>{const _0x14f7c7=_0x56b8ee;_0x32adf6['getTracks']()['forEach'](_0xa5fc04=>_0xa5fc04[_0x14f7c7(0x1f7)]());const _0xf00387=new Blob(eAudioChunks,{'type':eMediaRec[_0x14f7c7(0x187)]||_0x14f7c7(0x163)}),_0x19311f=new FileReader();_0x19311f[_0x14f7c7(0x1c6)]=_0x330ebe=>{const _0x39771c=_0x14f7c7;eAudio=_0x330ebe[_0x39771c(0x22b)][_0x39771c(0x1b9)],$(_0x39771c(0x248))[_0x39771c(0x159)]=eAudio,$('eAudPrev')[_0x39771c(0x1a5)][_0x39771c(0x167)]=_0x39771c(0x202),$('eRemoveAudioBtn')['style'][_0x39771c(0x167)]='';},_0x19311f[_0x14f7c7(0x1a2)](_0xf00387),$(_0x14f7c7(0x193))[_0x14f7c7(0x1a5)][_0x14f7c7(0x167)]='none',$(_0x14f7c7(0x2b1))[_0x14f7c7(0x103)]=_0x14f7c7(0x11e);},eMediaRec[_0x56b8ee(0x245)](),$('eRecActive')[_0x56b8ee(0x1a5)]['display']='',$(_0x56b8ee(0x2b1))[_0x56b8ee(0x1a5)][_0x56b8ee(0x167)]=_0x56b8ee(0x1ea);}catch{toast(_0x56b8ee(0x13b));}}function stopERec(){const _0x4f3455=a0_0x22c6f0;eMediaRec&&eMediaRec['state']==='recording'&&(eMediaRec[_0x4f3455(0x1f7)](),$(_0x4f3455(0x2b1))[_0x4f3455(0x1a5)]['display']='');}$(a0_0x22c6f0(0x2d7))['addEventListener'](a0_0x22c6f0(0x23a),()=>eAudioFileInput['click']()),eAudioFileInput['addEventListener']('change',()=>{const _0x41fbe9=a0_0x22c6f0,_0x10bf0b=eAudioFileInput[_0x41fbe9(0x24f)][0x0];if(!_0x10bf0b)return;const _0x24ecc9=new FileReader();_0x24ecc9[_0x41fbe9(0x1c6)]=_0x50e16d=>{const _0x5e3f2d=_0x41fbe9;eAudio=_0x50e16d[_0x5e3f2d(0x22b)][_0x5e3f2d(0x1b9)],$('eAudPrev')[_0x5e3f2d(0x159)]=eAudio,$('eAudPrev')[_0x5e3f2d(0x1a5)][_0x5e3f2d(0x167)]='block',$('eRemoveAudioBtn')['style'][_0x5e3f2d(0x167)]='',toast('Ljudfil\x20inläst!\x20✅');},_0x24ecc9[_0x41fbe9(0x1a2)](_0x10bf0b),eAudioFileInput[_0x41fbe9(0x19c)]='';}),$(a0_0x22c6f0(0x1f8))[a0_0x22c6f0(0x189)](a0_0x22c6f0(0x23a),()=>{const _0x43a215=a0_0x22c6f0;eAudio=null,$(_0x43a215(0x248))['style']['display']='none',$(_0x43a215(0x248))[_0x43a215(0x159)]='',$('eRemoveAudioBtn')[_0x43a215(0x1a5)][_0x43a215(0x167)]=_0x43a215(0x1ea),toast(_0x43a215(0x25f));}),$(a0_0x22c6f0(0x17d))[a0_0x22c6f0(0x189)]('click',async()=>{const _0x47317b=a0_0x22c6f0;try{stopERec();const _0x3f612e=$(_0x47317b(0x1e6))[_0x47317b(0x19c)][_0x47317b(0x242)]();if(!_0x3f612e){toast('Skriv\x20ett\x20namn!\x20✏️');return;}editNode['name']=_0x3f612e,editNode[_0x47317b(0x28e)]=eImg||null,editNode[_0x47317b(0x1d8)]=eAudio||null;if(editNode[_0x47317b(0x232)]===_0x47317b(0x29c))editNode['emoji']=eEmoji||null;await dbPut(editNode),render(),closeEditModal(),toast('Ändringar\x20sparade!\x20✅');}catch(_0x3249fe){toast(_0x47317b(0x2bb)+_0x3249fe[_0x47317b(0x1d9)]);}});const DEFAULTS=[{'name':a0_0x22c6f0(0x2f6),'emoji':'🏠'},{'name':'Skola','emoji':'🏫'},{'name':a0_0x22c6f0(0x266),'emoji':'😊'},{'name':a0_0x22c6f0(0x153),'emoji':'🚽'},{'name':a0_0x22c6f0(0x12b),'emoji':'🍽️'}];async function seed(){const _0x4ed370=a0_0x22c6f0;if(all['filter'](_0x2eea5f=>(_0x2eea5f['parentId']??null)===null)[_0x4ed370(0x2e4)]>0x0)return;for(const _0x4b328d of DEFAULTS){const _0x3fab29={'parentId':null,'type':_0x4ed370(0x29c),'name':_0x4b328d[_0x4ed370(0x2eb)],'emoji':_0x4b328d[_0x4ed370(0x24b)],'imageData':null,'audioData':null,'createdAt':Date[_0x4ed370(0x154)]()},_0x3c171f=await dbAdd(_0x3fab29);_0x3fab29['id']=_0x3c171f,all['push'](_0x3fab29);}}const APP_VERSION=a0_0x22c6f0(0x209),WHATS_NEW=['🌙\x20Mörkt\x20läge\x20(för\x20ljuskänsliga)',a0_0x22c6f0(0x22d),a0_0x22c6f0(0x2a6),'📋\x20Ny\x20överskådlig\x20vuxenmeny'];function showWhatsNew(){const _0x1f7bb5=a0_0x22c6f0,_0xcd8f4=localStorage[_0x1f7bb5(0x240)](_0x1f7bb5(0x1a1));if(_0xcd8f4===APP_VERSION)return;document['getElementById']('wnVersion')[_0x1f7bb5(0x103)]=_0x1f7bb5(0xf2)+APP_VERSION;const _0x5e7fe2=document[_0x1f7bb5(0x280)](_0x1f7bb5(0xef));_0x5e7fe2[_0x1f7bb5(0x12e)]='',WHATS_NEW[_0x1f7bb5(0x2c3)](_0x340f2d=>{const _0xa3f230=_0x1f7bb5,_0xc5ccc7=document[_0xa3f230(0x164)](_0xa3f230(0xfb));_0xc5ccc7[_0xa3f230(0x103)]=_0x340f2d,_0x5e7fe2[_0xa3f230(0x265)](_0xc5ccc7);}),document[_0x1f7bb5(0x280)](_0x1f7bb5(0x19b))['classList'][_0x1f7bb5(0x17a)]('open');}document['getElementById'](a0_0x22c6f0(0x24a))[a0_0x22c6f0(0x189)](a0_0x22c6f0(0x23a),()=>{const _0x1a83fb=a0_0x22c6f0;document[_0x1a83fb(0x280)](_0x1a83fb(0x19b))[_0x1a83fb(0x25a)][_0x1a83fb(0x111)](_0x1a83fb(0x2ad)),localStorage[_0x1a83fb(0x1ad)](_0x1a83fb(0x1a1),APP_VERSION);});async function init(){const _0x578c1f=a0_0x22c6f0;if('serviceWorker'in navigator)try{navigator[_0x578c1f(0x26b)][_0x578c1f(0xf4)](_0x578c1f(0x1e8));}catch(_0x456f63){}try{await openDB(),all=await dbAll(),await seed();}catch(_0x4e3e62){all=[],console[_0x578c1f(0x1ac)]('IndexedDB\x20ej\x20tillgänglig,\x20kör\x20utan\x20lagring:',_0x4e3e62);}render(),showWhatsNew();}init();</script>
+// ── Confirm ──
+let confirmResolve=null;
+const confirmOverlay=document.getElementById('confirmOverlay');
+function customConfirm(msg){
+  return new Promise(resolve=>{
+    confirmResolve=resolve;
+    document.getElementById('confirmMsg').textContent=msg;
+    confirmOverlay.classList.add('open');
+  });
+}
+document.getElementById('confirmYes').addEventListener('click',()=>{ confirmOverlay.classList.remove('open'); if(confirmResolve){confirmResolve(true);confirmResolve=null;} });
+document.getElementById('confirmNo').addEventListener('click',()=>{ confirmOverlay.classList.remove('open'); if(confirmResolve){confirmResolve(false);confirmResolve=null;} });
+confirmOverlay.addEventListener('click',e=>{ if(e.target===confirmOverlay){confirmOverlay.classList.remove('open');if(confirmResolve){confirmResolve(false);confirmResolve=null;}} });
+
+// ── PIN ──
+const PIN_KEY='bildstod_pin';
+const getPin=()=>localStorage.getItem(PIN_KEY)||'1234';
+const setPin=p=>localStorage.setItem(PIN_KEY,p);
+let isAdult=false, pinBuffer='';
+
+function setAdult(val){
+  isAdult=val;
+  document.body.classList.toggle('adult',val);
+  document.getElementById('header').classList.toggle('adult-mode',val);
+  document.getElementById('adultBar').classList.toggle('show',val);
+  document.getElementById('lockBtn').textContent=val?'🔓':'🔒';
+  document.getElementById('addBtn').classList.toggle('hidden',!val);
+  render();
+}
+
+const pinOverlay=document.getElementById('pinOverlay');
+function openPinModal(isMenu){
+  pinBuffer='';
+  const show=isMenu&&isAdult;
+  document.getElementById('pinTitle').textContent=show?'🔓 Vuxenläge aktivt':'🔒 Vuxenläge';
+  document.getElementById('pinSubtitle').textContent=show?'':'Ange PIN-kod';
+  document.getElementById('pinError').textContent='';
+  document.getElementById('pinHint').style.display=show?'none':'';
+  document.getElementById('pinDisplay').style.display=show?'none':'';
+  document.getElementById('theNumpad').style.display=show?'none':'';
+  document.getElementById('changePinArea').classList.toggle('show',show);
+  document.getElementById('newPin1').value='';
+  document.getElementById('newPin2').value='';
+  updateDots();
+  pinOverlay.classList.add('open');
+}
+function closePinModal(){
+  pinOverlay.classList.remove('open'); pinBuffer='';
+  document.getElementById('pinDisplay').style.display='';
+  document.getElementById('theNumpad').style.display='';
+  document.getElementById('changePinArea').classList.remove('show');
+}
+function updateDots(){ for(let i=0;i<4;i++){const d=document.getElementById('d'+i);d.classList.remove('filled','error');if(i<pinBuffer.length)d.classList.add('filled');} }
+function showPinError(){ for(let i=0;i<4;i++)document.getElementById('d'+i).classList.add('error'); document.getElementById('pinError').textContent='Fel PIN-kod, försök igen'; setTimeout(()=>{pinBuffer='';updateDots();document.getElementById('pinError').textContent='';},900); }
+
+document.querySelectorAll('.numpad-btn[data-n]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    if(pinBuffer.length>=4)return;
+    pinBuffer+=btn.dataset.n; updateDots();
+    if(pinBuffer.length===4) setTimeout(()=>{ if(pinBuffer===getPin()){closePinModal();setAdult(true);toast('Vuxenläge aktiverat 🔓');}else showPinError(); },120);
+  });
+});
+document.getElementById('pinDel').addEventListener('click',()=>{pinBuffer=pinBuffer.slice(0,-1);updateDots();document.getElementById('pinError').textContent='';});
+document.getElementById('pinCancel').addEventListener('click',closePinModal);
+document.getElementById('lockNowBtn').addEventListener('click',()=>{closePinModal();setAdult(false);toast('Låst 🔒');});
+
+// ── Dragspel i vuxenmenyn ──
+document.querySelectorAll('.acc-head').forEach(head=>{
+  head.addEventListener('click',()=>{
+    const section=head.parentElement;
+    const wasOpen=section.classList.contains('open');
+    // Stäng alla
+    document.querySelectorAll('.acc-section').forEach(s=>s.classList.remove('open'));
+    // Öppna den man tryckte på (om den var stängd)
+    if(!wasOpen) section.classList.add('open');
+  });
+});
+
+// ── Mörkt läge ──
+function applyDarkMode(on){
+  document.body.classList.toggle('dark',on);
+  const btn=document.getElementById('darkModeBtn');
+  if(btn) btn.textContent = on ? '🌙 Mörkt läge: På' : '🌙 Mörkt läge: Av';
+}
+let darkMode = localStorage.getItem('bildstod_dark') === '1';
+applyDarkMode(darkMode);
+document.getElementById('darkModeBtn').addEventListener('click',()=>{
+  darkMode = !darkMode;
+  localStorage.setItem('bildstod_dark', darkMode ? '1' : '0');
+  applyDarkMode(darkMode);
+  toast(darkMode ? 'Mörkt läge på 🌙' : 'Ljust läge på ☀️');
+});
+
+// ── Håll skärmen vaken (Wake Lock) ──
+let wakeLock = null;
+async function requestWakeLock(){
+  try{
+    if('wakeLock' in navigator){
+      wakeLock = await navigator.wakeLock.request('screen');
+    }
+  }catch(e){ /* ej kritiskt om det nekas */ }
+}
+// Återta wake lock när appen blir synlig igen (den släpps automatiskt när man byter app)
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState === 'visible') requestWakeLock();
+});
+requestWakeLock();
+
+// ── Stöd appen ──
+document.getElementById('supportBtn').addEventListener('click',()=>{
+  window.open('https://hihat.io/bildstd','_blank');
+});
+
+// ── Säkerhetskopiera (export) ──
+document.getElementById('exportBtn').addEventListener('click',async()=>{
+  try{
+    const data={ version:1, exportedAt:new Date().toISOString(), nodes:all };
+    const json=JSON.stringify(data);
+    const blob=new Blob([json],{type:'application/json'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    const d=new Date();
+    const stamp=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    a.href=url;
+    a.download='bildstod-backup-'+stamp+'.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+    toast('Säkerhetskopia sparad! 📤');
+  }catch(err){ toast('Fel: '+err.message); }
+});
+
+// ── Återställ (import) ──
+document.getElementById('importBtn').addEventListener('click',()=>document.getElementById('importFileInput').click());
+document.getElementById('importFileInput').addEventListener('change',function(){
+  const file=this.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      if(!data.nodes||!Array.isArray(data.nodes)){ toast('Ogiltig fil ❌'); return; }
+      const ok=await customConfirm('Återställ '+data.nodes.length+' kort? Detta ersätter alla nuvarande kort.');
+      if(!ok) return;
+      // Clear existing
+      for(const n of [...all]) await dbDel(n.id);
+      all=[];
+      // Import new (let DB assign fresh ids, remap parent relations)
+      const idMap={};
+      // First pass: add all nodes without parent links, record new ids
+      const sorted=[...data.nodes].sort((a,b)=>(a.id||0)-(b.id||0));
+      for(const node of sorted){
+        const oldId=node.id;
+        const copy={ parentId:node.parentId, type:node.type, name:node.name, emoji:node.emoji||null, imageData:node.imageData||null, audioData:node.audioData||null, createdAt:node.createdAt||Date.now() };
+        const newId=await dbAdd(copy);
+        copy.id=newId;
+        idMap[oldId]=newId;
+        all.push(copy);
+      }
+      // Second pass: fix parentId references to new ids
+      for(const node of all){
+        if(node.parentId!=null && idMap[node.parentId]!=null){
+          node.parentId=idMap[node.parentId];
+          await dbPut(node);
+        }
+      }
+      nav=[];
+      render();
+      closePinModal();
+      toast('Återställt! ✅');
+    }catch(err){ toast('Fel vid återställning: '+err.message); }
+  };
+  reader.readAsText(file);
+  this.value='';
+});
+pinOverlay.addEventListener('click',e=>{if(e.target===pinOverlay)closePinModal();});
+document.getElementById('lockBtn').addEventListener('click',()=>openPinModal(isAdult));
+document.getElementById('savePinBtn').addEventListener('click',()=>{
+  const p1=String(document.getElementById('newPin1').value).trim();
+  const p2=String(document.getElementById('newPin2').value).trim();
+  if(!/^\d{4}$/.test(p1)){toast('PIN måste vara 4 siffror!');return;}
+  if(p1!==p2){toast('PIN-koderna matchar inte!');return;}
+  setPin(p1);toast('PIN-kod ändrad! ✅');
+  document.getElementById('newPin1').value='';document.getElementById('newPin2').value='';
+});
+
+// ── State ──
+let all=[], nav=[], curAudio=null;
+const pid=()=>nav.length?nav[nav.length-1].id:null;
+const kids=p=>all.filter(n=>(n.parentId??null)===(p??null));
+const COLORS=['c0','c1','c2','c3','c4','c5'];
+// Emoji data: [emoji, keywords...]
+const EMOJI_DATA = [
+  ['🏠','hemma','hus','hem'],['🏫','skola','klassrum'],['😊','glad','lycklig','nöjd'],['🚽','toalett','bajsa','kiss','wc','toa'],
+  ['🍽️','mat','äta','tallrik'],['🌳','träd','natur','skog'],['🎮','spela','spel','gaming'],['📚','böcker','läsa','studera'],
+  ['🎨','måla','konst','rita'],['🚗','bil','köra','åka'],['💊','medicin','tablett','piller'],['🛁','bada','badkar'],
+  ['🐶','hund','valp'],['🎵','musik','sjunga','sång'],['⚽','fotboll','sparka','boll'],['🌈','regnbåge','färger'],
+  ['🧸','nalle','leksak','björn'],['🍎','äpple','frukt'],['😴','sova','trött','sömnig','natt'],['😢','ledsen','gråter','arg','trist'],
+  ['😡','arg','ilsken','sur'],['😂','skratta','roligt','kul'],['❤️','kärlek','hjärta','älska'],['⭐','stjärna','bra','guld'],
+  ['🌙','natt','måne','sova'],['☀️','sol','soligt','varmt','dag'],['🌧️','regn','regnig','väder'],['❄️','snö','vinter','kallt','is'],
+  ['🔥','eld','varmt','brand'],['🎂','tårta','födelsedag','kaka'],['🍕','pizza','mat'],['🍔','hamburgare','mat'],
+  ['🍜','nudlar','soppa','mat'],['🥛','mjölk','dricka'],['🧃','juice','dricka','saft'],['🍌','banan','frukt'],
+  ['🍓','jordgubbe','frukt','bär'],['🥕','morot','grönsak'],['🧁','muffins','kaka','söt'],['🍦','glass','söt','kall'],
+  ['🐱','katt','morrande'],['🐰','kanin','hare'],['🐸','groda','grön'],['🦁','lejon','djur'],['🐘','elefant','stor','grå'],
+  ['🦋','fjäril','insekt','vacker'],['🐟','fisk','hav','simma'],['🦄','enhörning','magisk'],['🐔','höna','fågel'],['🐺','varg','djur'],
+  ['👕','tröja','kläder'],['👟','sko','kläder','springa'],['🎒','ryggsäck','skola','väska'],['🛏️','säng','sova','vila'],
+  ['🪥','tandborste','tänder','borsta'],['🧴','tvål','tvätta','hygien'],['🚿','duscha','tvätta','hygien'],['🪞','spegel','titta'],
+  ['🚪','dörr','öppna','stäng'],['🛋️','soffa','sitta','vila'],['✏️','penna','skriva','rita'],['📏','linjal','mäta','skola'],
+  ['🖍️','krita','färg','rita'],['📐','vinkelhake','skola','mäta'],['🔔','klocka','ringa','ljud'],['📱','telefon','mobil'],
+  ['💻','dator','skriva'],['🎸','gitarr','musik'],['🥁','trummor','musik'],['🎹','piano','musik'],['🚌','buss','åka','resa'],
+  ['🚲','cykel','cykla','åka'],['✈️','flygplan','resa','flyga'],['🚑','ambulans','sjukhus','hjälp'],['🏥','sjukhus','doktor','sjuk'],
+  ['🏪','affär','handla','butik'],['🌺','blomma','vacker','växt'],['🌻','solros','blomma','gul'],['🍀','klöver','grön','tur'],
+  ['🌵','kaktus','taggig','öken'],['🎄','julgran','jul','grön'],['🏖️','strand','hav','sommar','sol'],['🏔️','berg','natur','högt'],
+  ['🎡','pariserhjul','nöjesfält','rolig'],['🏊','simma','pool','vatten'],['🚴','cykla','sport'],['🏋️','gym','träning','stark'],
+  ['🤸','gymnastik','sport','röra sig'],['💪','stark','muskel','bra'],['👋','hej','vinka','hälsa'],['🙏','snälla','tack','be'],
+  ['👀','se','titta','ögon'],['💤','sova','trött','vila'],['🤒','sjuk','feber','kall'],['🩹','plåster','sår','ont'],
+  ['💉','spruta','vaccination','sjuk'],['🩺','läkare','doktor','undersökning'],['🧩','pussel','spel','leka'],['🎯','mål','prick'],
+  ['🏆','vinna','trofé','bäst','mästare'],['🥇','guld','vinna','bäst'],['🎁','present','gåva','födelsedag'],['🎉','fest','fira','kul'],
+  ['🎈','ballong','fest','fira'],['🔑','nyckel','öppna','lås'],['🪴','krukväxt','blomma','inne'],['🧺','korg','tvätt'],
+  ['🧹','sopborste','städa','rent'],['🍳','steka','laga mat','pannkaka'],['☕','kaffe','varmt','dricka'],
+  ['🥱','gäspa','trött','uttråkad'],['🤗','kram','glad','varm'],['😰','nervös','rädd','svettig'],['🤔','fundera','tänka'],
+  ['🤢','illamående','spy','sjuk'],['😱','rädd','chockad','skrämd'],['🥳','fira','fest','glad'],['😎','cool','solglasögon'],
+  ['🤓','nördig','glasögon','smart'],['😇','snäll','ängel'],['🥰','kärlek','söt','glad'],['😤','frusterad','arg','fnys'],
+  ['🙄','trött','ögon','trist'],['😶','tyst','mun','ingen'],['🤐','tyst','mun','prata inte'],['😬','nervös','konstigt'],
+  ['🤧','nysning','förkyld','sjuk'],['🤮','spy','illamående','sjuk'],['🥵','varm','het','svett'],['🥶','kall','frys','frusen'],
+  ['🫁','lungor','andas'],['🧠','hjärna','tänka','smart'],['🦷','tand','tänder'],['👁️','öga','se','titta'],
+  ['👃','näsa','lukta'],['👅','tunga','smaka'],['🤲','händer','hålla'],['🫶','hjärta','händer','kärlek'],
+  ['🙌','klappar','bra','hurra'],['👏','klappa','bra','applåd'],['✌️','fred','seger','två'],
+  ['🎓','student','examen','skola'],['🏡','hus','hem','trädgård'],['🌡️','termometer','feber','temperatur'],
+];
+
+function buildEmojis(filter=''){
+  const row=document.getElementById('emojiRow');
+  row.innerHTML='';
+  const q=filter.toLowerCase().trim();
+  const filtered=q
+    ? EMOJI_DATA.filter(d=>d.slice(1).some(k=>k.includes(q)))
+    : EMOJI_DATA;
+  if(filtered.length===0){
+    const msg=document.createElement('div');
+    msg.style.cssText='color:#bbb;font-weight:700;font-size:.9rem;padding:16px 10px;white-space:nowrap';
+    msg.textContent='Inga emojis hittades';
+    row.appendChild(msg);
+    return;
+  }
+  filtered.forEach(d=>{
+    const em=d[0];
+    const b=document.createElement('button');b.className='eopt';b.textContent=em;
+    if(pEmoji===em) b.classList.add('sel');
+    b.addEventListener('click',()=>{
+      pEmoji=em;
+      row.querySelectorAll('.eopt').forEach(x=>x.classList.remove('sel'));
+      b.classList.add('sel');
+    });
+    row.appendChild(b);
+  });
+}
+
+// Emoji search
+document.getElementById('emojiSearch').addEventListener('input',function(){ buildEmojis(this.value); });
+
+// ── Toast ──
+const toastEl=document.getElementById('toastEl');
+function toast(msg){toastEl.textContent=msg;toastEl.classList.add('show');setTimeout(()=>toastEl.classList.remove('show'),2300);}
+
+// ── Render ──
+const grid=document.getElementById('grid');
+const emptyEl=document.getElementById('empty');
+const appTitle=document.getElementById('appTitle');
+const backBtn=document.getElementById('backBtn');
+
+function render(){
+  grid.querySelectorAll('.card').forEach(c=>c.remove());
+  // Update title to show current level name
+  const current=nav.length?nav[nav.length-1]:null;
+  if(current){
+    appTitle.innerHTML='';
+    const t=document.createElement('span');t.className='title-text';
+    t.textContent=(current.emoji||'📁')+' '+current.name;
+    appTitle.appendChild(t);
+  } else {
+    appTitle.innerHTML='<img class="title-icon" src="icon-192.png" alt=""><span class="title-text">Bildstöd</span>';
+  }
+  backBtn.classList.toggle('hidden',nav.length===0);
+
+  const children=kids(pid());
+  if(!children.length){
+    emptyEl.style.display='';
+    emptyEl.querySelector('h2').textContent=nav.length?'Tomt här inne':'Välkommen!';
+    emptyEl.querySelector('p').innerHTML=(!isAdult&&!all.length)
+      ?'Lås upp vuxenläget (🔒)<br>för att lägga till kort.'
+      :(isAdult?'Tryck <strong>+</strong> för att lägga till.':'');
+    return;
+  }
+  emptyEl.style.display='none';
+
+  children.forEach(node=>{
+    const isF=node.type==='folder';
+    const el=document.createElement('div');
+    el.className=`card ${COLORS[(node.id||0)%6]}${isF?' folder':''}`;
+
+    const vis=document.createElement('div'); vis.className='card-visual';
+    if(node.imageData){ const img=document.createElement('img');img.src=node.imageData;img.alt=node.name;vis.appendChild(img); }
+    else { const em=document.createElement('div');em.className='big-emoji';em.textContent=node.emoji||(isF?'📁':'🖼️');vis.appendChild(em); }
+    el.appendChild(vis);
+
+    const lbl=document.createElement('div');lbl.className='card-label';lbl.textContent=node.name||'…';el.appendChild(lbl);
+
+    if(isF){ const arr=document.createElement('div');arr.className='folder-arrow';arr.textContent='▶';el.appendChild(arr); }
+    else if(node.audioData){ const b=document.createElement('div');b.className='audio-badge';b.textContent='🔊';el.appendChild(b); }
+
+    const del=document.createElement('button');del.className='card-del';del.textContent='✕';
+    del.addEventListener('click',async e=>{
+      e.stopPropagation();e.preventDefault();
+      if(!isAdult)return;
+      const count=isF?all.filter(n=>n.parentId===node.id).length:0;
+      const msg=isF&&count>0?`Ta bort "${node.name}" och allt inuti (${count} objekt)?`:`Ta bort "${node.name}"?`;
+      const ok=await customConfirm(msg);
+      if(ok){await delRecursive(node.id);render();toast('Borttaget 🗑️');}
+    });
+    el.appendChild(del);
+
+    const edit=document.createElement('button');edit.className='card-edit';edit.textContent='✏️';
+    edit.addEventListener('click',e=>{
+      e.stopPropagation();e.preventDefault();
+      if(!isAdult)return;
+      openEditModal(node);
+    });
+    el.appendChild(edit);
+
+    el.addEventListener('click',()=>{
+      if(isF){nav.push({id:node.id,name:node.name,emoji:node.emoji});render();}
+      else playCard(node,el);
+    });
+    grid.appendChild(el);
+  });
+}
+
+function playCard(node,el){
+  if(curAudio){curAudio.pause();curAudio=null;}
+  el.classList.add('playing');setTimeout(()=>el.classList.remove('playing'),420);
+  if(node.audioData){const a=new Audio(node.audioData);curAudio=a;a.play().catch(()=>toast('Kunde inte spela ljud'));}
+  else if('speechSynthesis' in window&&node.name){const u=new SpeechSynthesisUtterance(node.name);u.lang='sv-SE';u.rate=0.85;u.pitch=1.1;speechSynthesis.speak(u);}
+  else toast('Inget ljud inspelat 🔇');
+}
+
+async function delRecursive(id){
+  for(const c of all.filter(n=>n.parentId===id))await delRecursive(c.id);
+  await dbDel(id);all=all.filter(n=>n.id!==id);
+}
+
+backBtn.addEventListener('click',()=>{nav.pop();render();});
+// ── Ja/Nej med egen röst (fallback: talsyntes) ──
+let yesNoPlayer=null;
+function playYesNo(key,fallbackWord){
+  const data=localStorage.getItem(key);
+  if(data){
+    try{
+      if(yesNoPlayer){yesNoPlayer.pause();}
+      yesNoPlayer=new Audio(data);
+      yesNoPlayer.play();
+      return;
+    }catch(e){}
+  }
+  speak(fallbackWord);
+}
+document.getElementById('yesBtn').addEventListener('click',()=>playYesNo('bildstod_yes_audio','Ja'));
+document.getElementById('noBtn').addEventListener('click',()=>playYesNo('bildstod_no_audio','Nej'));
+function speak(w){if(!('speechSynthesis' in window))return;const u=new SpeechSynthesisUtterance(w);u.lang='sv-SE';u.rate=0.85;speechSynthesis.speak(u);}
+
+// ── Spela in egen Ja/Nej-röst (vuxenmeny) ──
+let ynMediaRec=null, ynChunks=[], ynTarget=null;
+function ynUpdateUI(){
+  const yes=localStorage.getItem('bildstod_yes_audio');
+  const no=localStorage.getItem('bildstod_no_audio');
+  const yp=document.getElementById('yesAudPrev'), np=document.getElementById('noAudPrev');
+  if(yes){yp.src=yes;yp.style.display='block';document.getElementById('delYesBtn').style.display='';}
+  else{yp.style.display='none';yp.removeAttribute('src');document.getElementById('delYesBtn').style.display='none';}
+  if(no){np.src=no;np.style.display='block';document.getElementById('delNoBtn').style.display='';}
+  else{np.style.display='none';np.removeAttribute('src');document.getElementById('delNoBtn').style.display='none';}
+}
+async function ynStartRec(target){
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    ynTarget=target; ynChunks=[];
+    const opts=MediaRecorder.isTypeSupported('audio/webm')?{mimeType:'audio/webm'}:{};
+    ynMediaRec=new MediaRecorder(stream,opts);
+    ynMediaRec.ondataavailable=e=>{if(e.data.size>0)ynChunks.push(e.data);};
+    ynMediaRec.onstop=()=>{
+      stream.getTracks().forEach(t=>t.stop());
+      const blob=new Blob(ynChunks,{type:ynMediaRec.mimeType||'audio/webm'});
+      const r=new FileReader();
+      r.onload=e=>{
+        try{
+          localStorage.setItem(ynTarget==='yes'?'bildstod_yes_audio':'bildstod_no_audio',e.target.result);
+          ynUpdateUI();
+          toast('Inspelat! ✅');
+        }catch(err){ toast('Kunde inte spara – ljudet är för långt'); }
+      };
+      r.readAsDataURL(blob);
+      document.getElementById('yesNoRecActive').style.display='none';
+      document.getElementById('recYesBtn').style.display='';
+      document.getElementById('recNoBtn').style.display='';
+    };
+    ynMediaRec.start();
+    document.getElementById('yesNoRecActive').style.display='';
+    document.getElementById('recYesBtn').style.display='none';
+    document.getElementById('recNoBtn').style.display='none';
+  }catch{toast('Mikrofonåtkomst nekad 🎙️');}
+}
+document.getElementById('recYesBtn').addEventListener('click',()=>ynStartRec('yes'));
+document.getElementById('recNoBtn').addEventListener('click',()=>ynStartRec('no'));
+document.getElementById('yesNoStopBtn').addEventListener('click',()=>{if(ynMediaRec&&ynMediaRec.state==='recording')ynMediaRec.stop();});
+document.getElementById('delYesBtn').addEventListener('click',()=>{localStorage.removeItem('bildstod_yes_audio');ynUpdateUI();toast('Borttaget');});
+document.getElementById('delNoBtn').addEventListener('click',()=>{localStorage.removeItem('bildstod_no_audio');ynUpdateUI();toast('Borttaget');});
+ynUpdateUI();
+
+// ── Add ──
+const addOverlay=document.getElementById('addOverlay');
+const fileInp=document.getElementById('fileInput');
+const audioFileInp=document.getElementById('audioFileInput');
+let pImg=null,pAudio=null,pEmoji=null,fileTgt=null,mediaRec=null,audioChunks=[];
+const $=id=>document.getElementById(id);
+const stepIds=['s0','sF','sC1','sC2'];
+function showStep(id){stepIds.forEach(s=>$(s).classList.remove('active'));$(id).classList.add('active');}
+function openAddModal(){if(!isAdult)return;resetAdd();addOverlay.classList.add('open');}
+function closeAddModal(){addOverlay.classList.remove('open');stopRec();}
+function resetAdd(){
+  pImg=null;pAudio=null;pEmoji=null;fileTgt=null;
+  $('fName').value='';$('cName').value='';
+  $('fPhotoArea').innerHTML='<div class="pt-hint"><span>📷</span><small>Bild (valfritt)</small></div>';
+  $('cPhotoArea').innerHTML='<div class="pt-hint"><span>📷</span><small>Tryck för att ta bild</small></div>';
+  $('aMini').innerHTML='';$('audPrev').style.display='none';$('audPrev').src='';
+  $('recIdle').style.display='';$('recActive').style.display='none';
+  $('recordBtn').textContent='🎙️ Spela in direkt';
+  fileInp.value='';audioFileInp.value='';
+  const es=document.getElementById('emojiSearch');if(es)es.value='';
+  buildEmojis();showStep('s0');$('mTitle').textContent='Lägg till';
+}
+$('addBtn').addEventListener('click',openAddModal);
+addOverlay.addEventListener('click',e=>{if(e.target===addOverlay)closeAddModal();});
+$('s0Cancel').addEventListener('click',closeAddModal);
+$('chooseFolder').addEventListener('click',()=>{showStep('sF');$('mTitle').textContent='Ny kategori';});
+$('chooseCard').addEventListener('click',()=>{showStep('sC1');$('mTitle').textContent='Nytt bildkort';});
+$('fBack').addEventListener('click',()=>{showStep('s0');$('mTitle').textContent='Lägg till';});
+$('c1Back').addEventListener('click',()=>{showStep('s0');$('mTitle').textContent='Lägg till';});
+$('c2Back').addEventListener('click',()=>{pAudio=null;$('audPrev').style.display='none';$('recIdle').style.display='';showStep('sC1');$('mTitle').textContent='Nytt bildkort';});
+
+function setPhotoArea(id,src){const a=$(id);a.innerHTML='';const img=document.createElement('img');img.src=src;a.appendChild(img);}
+$('fPhotoArea').addEventListener('click',()=>{fileTgt='folder';fileInp.removeAttribute('capture');fileInp.click();});
+$('cPhotoArea').addEventListener('click',()=>{fileTgt='card';fileInp.removeAttribute('capture');fileInp.click();});
+// ── Beskärning (pan + pinch-zoom → fyrkantig bild) ──
+const cropOverlay=document.getElementById('cropOverlay');
+const cropImgEl=document.getElementById('cropImg');
+const cropViewEl=document.getElementById('cropView');
+const cropZoomEl=document.getElementById('cropZoom');
+let cropCb=null;
+const CS={nw:0,nh:0,s:1,minS:1,maxS:1,tx:0,ty:0,V:300};
+
+function openCropper(dataUrl,cb){
+  cropCb=cb;
+  const im=new Image();
+  im.onload=()=>{
+    CS.nw=im.naturalWidth; CS.nh=im.naturalHeight;
+    CS.V=cropViewEl.clientWidth||300;
+    CS.minS=Math.max(CS.V/CS.nw, CS.V/CS.nh);
+    CS.maxS=CS.minS*5;
+    CS.s=CS.minS; CS.tx=0; CS.ty=0;
+    cropImgEl.src=dataUrl;
+    cropZoomEl.value=0;
+    cropOverlay.classList.add('open');
+    requestAnimationFrame(()=>{ CS.V=cropViewEl.clientWidth||300; CS.minS=Math.max(CS.V/CS.nw,CS.V/CS.nh); CS.maxS=CS.minS*5; CS.s=CS.minS; applyCrop(); });
+  };
+  im.src=dataUrl;
+}
+function clampCrop(){
+  CS.s=Math.min(Math.max(CS.s,CS.minS),CS.maxS);
+  const hx=Math.max(0,(CS.nw*CS.s-CS.V)/2), hy=Math.max(0,(CS.nh*CS.s-CS.V)/2);
+  CS.tx=Math.min(Math.max(CS.tx,-hx),hx);
+  CS.ty=Math.min(Math.max(CS.ty,-hy),hy);
+}
+function applyCrop(){
+  clampCrop();
+  cropImgEl.style.transform='translate(calc(-50% + '+CS.tx+'px), calc(-50% + '+CS.ty+'px)) scale('+CS.s+')';
+  cropImgEl.style.width=CS.nw+'px';
+  const pct=(CS.s-CS.minS)/(CS.maxS-CS.minS)*100;
+  cropZoomEl.value=isFinite(pct)?pct:0;
+}
+cropZoomEl.addEventListener('input',function(){
+  const mid={x:0,y:0};
+  const ns=CS.minS+(this.value/100)*(CS.maxS-CS.minS);
+  CS.tx=mid.x-(mid.x-CS.tx)*(ns/CS.s);
+  CS.ty=mid.y-(mid.y-CS.ty)*(ns/CS.s);
+  CS.s=ns; applyCrop();
+});
+// Pekare: 1 finger = dra, 2 fingrar = nyp
+const cropPts=new Map();
+let lastDist=0;
+cropViewEl.addEventListener('pointerdown',e=>{
+  cropViewEl.setPointerCapture(e.pointerId);
+  cropPts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(cropPts.size===2){
+    const p=[...cropPts.values()];
+    lastDist=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y);
+  }
+});
+cropViewEl.addEventListener('pointermove',e=>{
+  if(!cropPts.has(e.pointerId))return;
+  const prev=cropPts.get(e.pointerId);
+  const cur={x:e.clientX,y:e.clientY};
+  if(cropPts.size===1){
+    CS.tx+=cur.x-prev.x; CS.ty+=cur.y-prev.y;
+    cropPts.set(e.pointerId,cur); applyCrop();
+  } else if(cropPts.size===2){
+    cropPts.set(e.pointerId,cur);
+    const p=[...cropPts.values()];
+    const d=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y);
+    if(lastDist>0){
+      const rect=cropViewEl.getBoundingClientRect();
+      const mx=(p[0].x+p[1].x)/2-rect.left-rect.width/2;
+      const my=(p[0].y+p[1].y)/2-rect.top-rect.height/2;
+      const ns=Math.min(Math.max(CS.s*(d/lastDist),CS.minS),CS.maxS);
+      CS.tx=mx-(mx-CS.tx)*(ns/CS.s);
+      CS.ty=my-(my-CS.ty)*(ns/CS.s);
+      CS.s=ns; applyCrop();
+    }
+    lastDist=d;
+  }
+});
+function cropPointerEnd(e){ cropPts.delete(e.pointerId); if(cropPts.size<2)lastDist=0; }
+cropViewEl.addEventListener('pointerup',cropPointerEnd);
+cropViewEl.addEventListener('pointercancel',cropPointerEnd);
+cropViewEl.addEventListener('wheel',e=>{
+  e.preventDefault();
+  const rect=cropViewEl.getBoundingClientRect();
+  const mx=e.clientX-rect.left-rect.width/2, my=e.clientY-rect.top-rect.height/2;
+  const ns=Math.min(Math.max(CS.s*(e.deltaY<0?1.08:0.92),CS.minS),CS.maxS);
+  CS.tx=mx-(mx-CS.tx)*(ns/CS.s); CS.ty=my-(my-CS.ty)*(ns/CS.s);
+  CS.s=ns; applyCrop();
+},{passive:false});
+document.getElementById('cropDone').addEventListener('click',()=>{
+  const out=document.createElement('canvas');
+  out.width=600; out.height=600;
+  const srcSize=CS.V/CS.s;
+  const cx=CS.nw/2-CS.tx/CS.s, cy=CS.nh/2-CS.ty/CS.s;
+  out.getContext('2d').drawImage(cropImgEl,cx-srcSize/2,cy-srcSize/2,srcSize,srcSize,0,0,600,600);
+  const sq=out.toDataURL('image/jpeg',0.8);
+  cropOverlay.classList.remove('open');
+  if(cropCb)cropCb(sq);
+  cropCb=null;
+});
+document.getElementById('cropCancel').addEventListener('click',()=>{
+  cropOverlay.classList.remove('open'); cropCb=null;
+});
+
+fileInp.addEventListener('change',()=>{
+  const file=fileInp.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    openCropper(e.target.result,sq=>{
+      pImg=sq;
+      if(fileTgt==='folder')setPhotoArea('fPhotoArea',pImg);
+      else{setPhotoArea('cPhotoArea',pImg);updateAMini();}
+    });
+  };reader.readAsDataURL(file);fileInp.value='';
+});
+function updateAMini(){const m=$('aMini');m.innerHTML='';if(pImg){const i=document.createElement('img');i.src=pImg;m.appendChild(i);}}
+$('uploadAudioBtn').addEventListener('click',()=>audioFileInp.click());
+audioFileInp.addEventListener('change',()=>{
+  const file=audioFileInp.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{pAudio=e.target.result;$('audPrev').src=pAudio;$('audPrev').style.display='block';toast('Ljudfil inläst! ✅');};
+  reader.readAsDataURL(file);audioFileInp.value='';
+});
+$('saveFolder').addEventListener('click',async()=>{
+  try {
+    const nameEl = document.getElementById('fName');
+    const name = nameEl ? nameEl.value.trim() : '';
+    if(!name){ toast('Skriv ett namn! ✏️'); return; }
+    const parentId = pid();
+    const node = { parentId: parentId, type:'folder', name: name, emoji: pEmoji||null, imageData: pImg||null, audioData: null, createdAt: Date.now() };
+    const id = await dbAdd(node);
+    node.id = id;
+    all.push(node);
+    render();
+    closeAddModal();
+    toast('Kategori sparad! 📁');
+  } catch(err) {
+    toast('Fel: ' + err.message);
+  }
+});
+$('goAudio').addEventListener('click',()=>{
+  if(!pImg){toast('Ta en bild först! 📷');return;}
+  if(!$('cName').value.trim()){toast('Skriv ett namn! ✏️');return;}
+  updateAMini();showStep('sC2');$('mTitle').textContent='Spela in ljud';
+});
+$('recordBtn').addEventListener('click',startRec);
+$('stopBtn').addEventListener('click',stopRec);
+async function startRec(){
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    audioChunks=[];const opts=MediaRecorder.isTypeSupported('audio/webm')?{mimeType:'audio/webm'}:{};
+    mediaRec=new MediaRecorder(stream,opts);
+    mediaRec.ondataavailable=e=>{if(e.data.size>0)audioChunks.push(e.data);};
+    mediaRec.onstop=()=>{
+      stream.getTracks().forEach(t=>t.stop());
+      const blob=new Blob(audioChunks,{type:mediaRec.mimeType||'audio/webm'});
+      const r=new FileReader();r.onload=e=>{pAudio=e.target.result;$('audPrev').src=pAudio;$('audPrev').style.display='block';};r.readAsDataURL(blob);
+      $('recActive').style.display='none';$('recIdle').style.display='';$('recordBtn').textContent='🎙️ Spela in igen';
+    };
+    mediaRec.start();$('recIdle').style.display='none';$('recActive').style.display='';
+  }catch{toast('Mikrofonåtkomst nekad 🎙️');}
+}
+function stopRec(){if(mediaRec&&mediaRec.state==='recording')mediaRec.stop();}
+async function saveCard(skip){
+  try {
+    stopRec();
+    const name=$('cName').value.trim();
+    if(!pImg||!name){toast('Bild och namn krävs!');return;}
+    const node={parentId:pid(),type:'card',name,emoji:null,imageData:pImg,audioData:skip?null:(pAudio||null),createdAt:Date.now()};
+    const id=await dbAdd(node);node.id=id;all.push(node);render();closeAddModal();toast('Bildkort sparat! 🎉');
+  } catch(err) {
+    toast('Fel: ' + err.message);
+  }
+}
+$('saveCard').addEventListener('click',()=>saveCard(false));
+$('skipAudio').addEventListener('click',()=>saveCard(true));
+
+// ── Edit Modal ──
+const editOverlay=document.getElementById('editOverlay');
+const eFileInput=document.getElementById('eFileInput');
+const eAudioFileInput=document.getElementById('eAudioFileInput');
+let editNode=null, eImg=null, eAudio=null, eEmoji=null, eMediaRec=null, eAudioChunks=[];
+
+function openEditModal(node){
+  editNode=node;
+  eImg=node.imageData||null;
+  eAudio=node.audioData||null;
+  eEmoji=node.emoji||null;
+  const isF=node.type==='folder';
+  $('editTitle').textContent=isF?'Redigera kategori':'Redigera bildkort';
+  $('eName').value=node.name||'';
+  // Photo
+  if(eImg) setPhotoArea('ePhotoArea',eImg);
+  else $('ePhotoArea').innerHTML='<div class="pt-hint"><span>📷</span><small>Tryck för att byta bild</small></div>';
+  // Emoji picker only for folders
+  if(isF){
+    $('eEmojiWrap').style.display='';
+    $('eEmojiSearch').value='';
+    buildEEmojis();
+  } else {
+    $('eEmojiWrap').style.display='none';
+  }
+  // Audio
+  if(eAudio){ $('eAudPrev').src=eAudio; $('eAudPrev').style.display='block'; $('eRemoveAudioBtn').style.display=''; }
+  else { $('eAudPrev').style.display='none'; $('eAudPrev').src=''; $('eRemoveAudioBtn').style.display='none'; }
+  $('eRecActive').style.display='none';
+  $('eRecordBtn').textContent='🎙️ Spela in nytt ljud';
+  editOverlay.classList.add('open');
+}
+function closeEditModal(){ editOverlay.classList.remove('open'); stopERec(); editNode=null; }
+
+editOverlay.addEventListener('click',e=>{if(e.target===editOverlay)closeEditModal();});
+$('eCancel').addEventListener('click',closeEditModal);
+
+// Edit emoji picker
+function buildEEmojis(filter=''){
+  const row=$('eEmojiRow');row.innerHTML='';
+  const q=filter.toLowerCase().trim();
+  const filtered=q?EMOJI_DATA.filter(d=>d.slice(1).some(k=>k.includes(q))):EMOJI_DATA;
+  if(filtered.length===0){const m=document.createElement('div');m.style.cssText='color:#bbb;font-weight:700;font-size:.9rem;padding:16px 10px;white-space:nowrap';m.textContent='Inga emojis hittades';row.appendChild(m);return;}
+  filtered.forEach(d=>{
+    const em=d[0];const b=document.createElement('button');b.className='eopt';b.textContent=em;
+    if(eEmoji===em)b.classList.add('sel');
+    b.addEventListener('click',()=>{eEmoji=em;row.querySelectorAll('.eopt').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');});
+    row.appendChild(b);
+  });
+}
+$('eEmojiSearch').addEventListener('input',function(){buildEEmojis(this.value);});
+
+// Edit photo
+$('ePhotoArea').addEventListener('click',()=>{eFileInput.removeAttribute('capture');eFileInput.click();});
+eFileInput.addEventListener('change',()=>{
+  const file=eFileInput.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    openCropper(e.target.result,sq=>{
+      eImg=sq;
+      setPhotoArea('ePhotoArea',eImg);
+      eEmoji=null; // photo overrides emoji
+    });
+  };reader.readAsDataURL(file);eFileInput.value='';
+});
+
+// Edit audio
+$('eRecordBtn').addEventListener('click',startERec);
+$('eStopBtn').addEventListener('click',stopERec);
+async function startERec(){
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    eAudioChunks=[];const opts=MediaRecorder.isTypeSupported('audio/webm')?{mimeType:'audio/webm'}:{};
+    eMediaRec=new MediaRecorder(stream,opts);
+    eMediaRec.ondataavailable=e=>{if(e.data.size>0)eAudioChunks.push(e.data);};
+    eMediaRec.onstop=()=>{
+      stream.getTracks().forEach(t=>t.stop());
+      const blob=new Blob(eAudioChunks,{type:eMediaRec.mimeType||'audio/webm'});
+      const r=new FileReader();r.onload=e=>{eAudio=e.target.result;$('eAudPrev').src=eAudio;$('eAudPrev').style.display='block';$('eRemoveAudioBtn').style.display='';};r.readAsDataURL(blob);
+      $('eRecActive').style.display='none';$('eRecordBtn').textContent='🎙️ Spela in igen';
+    };
+    eMediaRec.start();$('eRecActive').style.display='';$('eRecordBtn').style.display='none';
+  }catch{toast('Mikrofonåtkomst nekad 🎙️');}
+}
+function stopERec(){if(eMediaRec&&eMediaRec.state==='recording'){eMediaRec.stop();$('eRecordBtn').style.display='';}}
+$('eUploadAudioBtn').addEventListener('click',()=>eAudioFileInput.click());
+eAudioFileInput.addEventListener('change',()=>{
+  const file=eAudioFileInput.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{eAudio=e.target.result;$('eAudPrev').src=eAudio;$('eAudPrev').style.display='block';$('eRemoveAudioBtn').style.display='';toast('Ljudfil inläst! ✅');};
+  reader.readAsDataURL(file);eAudioFileInput.value='';
+});
+$('eRemoveAudioBtn').addEventListener('click',()=>{
+  eAudio=null;$('eAudPrev').style.display='none';$('eAudPrev').src='';$('eRemoveAudioBtn').style.display='none';toast('Ljud borttaget');
+});
+
+// Save edit
+$('eSave').addEventListener('click',async()=>{
+  try{
+    stopERec();
+    const name=$('eName').value.trim();
+    if(!name){toast('Skriv ett namn! ✏️');return;}
+    editNode.name=name;
+    editNode.imageData=eImg||null;
+    editNode.audioData=eAudio||null;
+    if(editNode.type==='folder') editNode.emoji=eEmoji||null;
+    // Update in DB: delete old, add updated (keep same id via put)
+    await dbPut(editNode);
+    render();closeEditModal();toast('Ändringar sparade! ✅');
+  }catch(err){toast('Fel: '+err.message);}
+});
+
+// ── Seed ──
+const DEFAULTS=[{name:'Hemma',emoji:'🏠'},{name:'Skola',emoji:'🏫'},{name:'Humör',emoji:'😊'},{name:'Toalett',emoji:'🚽'},{name:'Mat',emoji:'🍽️'}];
+async function seed(){
+  if(all.filter(n=>(n.parentId??null)===null).length>0)return;
+  for(const d of DEFAULTS){const node={parentId:null,type:'folder',name:d.name,emoji:d.emoji,imageData:null,audioData:null,createdAt:Date.now()};const id=await dbAdd(node);node.id=id;all.push(node);}
+}
+
+// ── Vad är nytt popup ──
+// Ändra APP_VERSION + WHATS_NEW vid varje uppdatering
+const APP_VERSION = '0.07';
+const WHATS_NEW = [
+  '🖼️ Justera bilden — dra och zooma innan den sparas',
+  '🟦 Alla kort har nu samma fyrkantiga storlek'
+];
+
+function showWhatsNew(){
+  const seen = localStorage.getItem('bildstod_seen_version');
+  if(seen === APP_VERSION) return; // redan sett denna version
+  document.getElementById('wnVersion').textContent = 'Version ' + APP_VERSION;
+  const list = document.getElementById('wnList');
+  list.innerHTML = '';
+  WHATS_NEW.forEach(item=>{
+    const div=document.createElement('div');
+    div.textContent = item;
+    list.appendChild(div);
+  });
+  document.getElementById('whatsNewOverlay').classList.add('open');
+}
+document.getElementById('wnClose').addEventListener('click',()=>{
+  document.getElementById('whatsNewOverlay').classList.remove('open');
+  localStorage.setItem('bildstod_seen_version', APP_VERSION);
+});
+
+async function init(){
+  if('serviceWorker' in navigator){ try{ navigator.serviceWorker.register('sw.js'); }catch(e){} }
+  try {
+    await openDB();
+    all = await dbAll();
+    await seed();
+  } catch(e) {
+    // IndexedDB blocked (e.g. Claude app preview) — run in memory-only mode
+    all = [];
+    console.warn('IndexedDB ej tillgänglig, kör utan lagring:', e);
+  }
+  render();
+  showWhatsNew();
+}
+init();
+</script>
 </body>
 </html>
