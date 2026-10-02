@@ -42,7 +42,8 @@ async function networkFirst(request) {
   const cache = await caches.open(CACHE);
   try {
     const response = await Promise.race([
-      fetch(request),
+      // no-cache: kringgå webbläsarens HTTP-cache (GitHub Pages sparar filer i 10 min)
+      fetch(request, { cache: 'no-cache' }),
       new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), NETWORK_TIMEOUT))
     ]);
     if (response && response.ok) cache.put(request, response.clone());
