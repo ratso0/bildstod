@@ -12,8 +12,9 @@
   --cols: 2;
 }
 html { touch-action: manipulation; }
+/* 100vh som #app: med viewport-fit=cover blir 100% för kort i iPhone-hemskärmsläge och klipper botten */
 html, body {
-  height: 100%; overflow: hidden;
+  height: 100%; height: 100vh; overflow: hidden;
   font-family: 'Nunito', sans-serif;
   background: var(--bg);
   color: var(--text);
