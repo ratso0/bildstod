@@ -56,7 +56,8 @@ body.dark .profile-row { background: #12141c; }
 header {
   flex-shrink: 0;
   background: linear-gradient(135deg, #118AB2, #06D6A0);
-  padding: 14px 16px 12px;
+  /* safe-area: gradienten fortsätter upp bakom iPhonens statusfält */
+  padding: calc(14px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) 12px calc(16px + env(safe-area-inset-left));
   display: flex; align-items: center; gap: 12px;
   box-shadow: 0 4px 20px rgba(17,138,178,0.35);
   z-index: 20; transition: background 0.4s;
@@ -261,7 +262,7 @@ body.adult .audio-badge { display: none; }
 /* ── JA/NEJ ── */
 footer {
   flex-shrink:0; display:grid; grid-template-columns:1fr 1fr;
-  gap:12px; padding:12px 14px 18px; background: var(--bg);
+  gap:12px; padding:12px 14px max(18px, env(safe-area-inset-bottom)); background: var(--bg);
 }
 .yn {
   border:none; border-radius:24px; padding:22px 10px;
@@ -382,7 +383,7 @@ audio { width:100%; max-width:320px; }
 .or-divider { font-size:.82rem; font-weight:800; color:var(--muted); letter-spacing:.5px; }
 
 /* TOAST */
-.toast { position:fixed; top:80px; left:50%; transform:translateX(-50%) translateY(-16px); background:#1A1A2E; color:white; padding:11px 24px; border-radius:30px; font-weight:700; font-size:.95rem; z-index:999; opacity:0; pointer-events:none; transition:opacity .22s, transform .22s; max-width:calc(100% - 32px); text-align:center; }
+.toast { position:fixed; top:calc(80px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%) translateY(-16px); background:#1A1A2E; color:white; padding:11px 24px; border-radius:30px; font-weight:700; font-size:.95rem; z-index:999; opacity:0; pointer-events:none; transition:opacity .22s, transform .22s; max-width:calc(100% - 32px); text-align:center; }
 .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
 
 /* ── MINSKAD RÖRELSE ── */

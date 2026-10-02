@@ -271,7 +271,6 @@ function refreshAdultMenu() {
   updateVoiceUI();
   renderProfileList();
   updateLockUI();
-  renderPackList();
 }
 
 // ── TEMA (auto / ljust / mörkt) ──
@@ -1297,49 +1296,6 @@ $("eSave").addEventListener("click", async () => {
   }
 });
 
-// ── STARTPAKET ──
-const PACKS = [
-  { name: "Mat & dryck", emoji: "🍽️", cards: [["Äta", "🍽️"], ["Dricka", "🥛"], ["Vatten", "💧"], ["Smörgås", "🥪"], ["Frukt", "🍎"], ["Banan", "🍌"], ["Pizza", "🍕"], ["Glass", "🍦"], ["Mer", "➕"], ["Färdig", "✅"]] },
-  { name: "Känslor", emoji: "😊", cards: [["Glad", "😊"], ["Ledsen", "😢"], ["Arg", "😡"], ["Rädd", "😱"], ["Trött", "😴"], ["Lugn", "😌"], ["Ont", "🤕"], ["Uttråkad", "🥱"]] },
-  { name: "Behov", emoji: "🙋", cards: [["Toalett", "🚽"], ["Hjälp", "🙋"], ["Paus", "⏸️"], ["Sluta", "✋"], ["Törstig", "🥤"], ["Hungrig", "🍽️"], ["Kall", "🥶"], ["Varm", "🥵"], ["Vila", "🛋️"]] },
-  { name: "Aktiviteter", emoji: "🎨", cards: [["Leka", "🧸"], ["Måla", "🎨"], ["Läsa", "📚"], ["Musik", "🎵"], ["Gå ut", "🌳"], ["Spela", "🎮"], ["Titta på TV", "📺"], ["Bada", "🛁"], ["Cykla", "🚲"]] },
-  { name: "Personer", emoji: "👨‍👩‍👧", cards: [["Mamma", "👩"], ["Pappa", "👨"], ["Syster", "👧"], ["Bror", "👦"], ["Mormor", "👵"], ["Morfar", "👴"], ["Lärare", "🧑‍🏫"], ["Kompis", "🤗"]] },
-  { name: "Småord", emoji: "💬", cards: [["Jag vill", "🙋"], ["Mer", "➕"], ["Sluta", "✋"], ["Hjälp", "🙏"], ["Klar", "✅"], ["Hej", "👋"], ["Tack", "🙏"], ["Titta", "👀"]] }
-];
-function renderPackList() {
-  const box = $("packList");
-  box.innerHTML = "";
-  const where = nav.length ? "”" + nav[nav.length - 1].name + "”" : "startsidan";
-  PACKS.forEach(pack => {
-    const btn = document.createElement("button");
-    btn.className = "mbtn mb-lavender";
-    btn.textContent = pack.emoji + " " + pack.name + " (" + pack.cards.length + " kort)";
-    btn.addEventListener("click", async () => {
-      if (!await customConfirm("Lägga till ”" + pack.name + "” med " + pack.cards.length + " kort på " + where + "?", { title: "Startpaket", yes: "➕ Lägg till" })) return;
-      await addPack(pack);
-      closePinModal();
-      toast(pack.name + " tillagd! 📦");
-    });
-    box.appendChild(btn);
-  });
-}
-async function addPack(pack) {
-  const parentId = pid();
-  const folder = {
-    parentId, type: "folder", name: pack.name, emoji: pack.emoji,
-    imageData: null, audioData: null, order: nextOrder(parentId), createdAt: Date.now()
-  };
-  folder.id = await dbAdd(folder);
-  all.push(folder);
-  for (let i = 0; i < pack.cards.length; i++) {
-    const [name, emoji] = pack.cards[i];
-    const card = { parentId: folder.id, type: "card", name, emoji, imageData: null, audioData: null, order: i + 1, createdAt: Date.now() };
-    card.id = await dbAdd(card);
-    all.push(card);
-  }
-  render();
-}
-
 // ── PROFILHANTERING ──
 function renderProfileList() {
   const box = $("profileList");
@@ -1504,7 +1460,7 @@ const WHATS_NEW = [
   "👧 Flera profiler på samma enhet",
   "🗣️ Välj röst, hastighet och tonhöjd",
   "🙈 Dölj kort tillfälligt",
-  "📦 Färdiga startpaket och symboler på bildkort",
+  "😀 Symboler på bildkort",
   "📌 Skolläge — lås till en kategori",
   "🌓 Mörkt läge följer telefonens inställning"
 ];

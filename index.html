@@ -2,7 +2,7 @@
 <html lang="sv">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Bildstöd">
@@ -110,7 +110,7 @@
       </div>
 
       <div class="acc-section">
-        <button class="acc-head">🗣️ Talsyntes <span class="arrow">▶</span></button>
+        <button class="acc-head">🗣️ Röst & ljud <span class="arrow">▶</span></button>
         <div class="acc-body">
           <div class="set-label">Röst</div>
           <select id="voiceSelect" aria-label="Röst"></select>
@@ -119,12 +119,7 @@
           <div class="set-label">Tonhöjd: <span id="pitchVal"></span></div>
           <input type="range" id="pitchRange" min="0.5" max="1.8" step="0.05" aria-label="Tonhöjd">
           <button class="mbtn mb-blue" id="voiceTest">🔊 Testa rösten</button>
-        </div>
-      </div>
-
-      <div class="acc-section">
-        <button class="acc-head">🎙️ Egen röst 👍👎 <span class="arrow">▶</span></button>
-        <div class="acc-body">
+          <div class="set-label">Egen röst för 👍 och 👎</div>
           <div class="hint">Spela in din egen röst istället för talsyntesen</div>
           <button class="mbtn mb-green" id="recYesBtn">🎙️ Spela in "Ja" 👍</button>
           <audio id="yesAudPrev" controls style="display:none;width:100%;max-width:280px;margin:0 auto"></audio>
@@ -142,58 +137,34 @@
       </div>
 
       <div class="acc-section">
-        <button class="acc-head">👧 Profiler <span class="arrow">▶</span></button>
+        <button class="acc-head">👧 Profiler & skolläge <span class="arrow">▶</span></button>
         <div class="acc-body">
           <div class="hint">Varje profil har egna kort. Bra om flera barn delar samma platta.</div>
           <div id="profileList" style="display:flex;flex-direction:column;gap:8px"></div>
           <input type="text" id="newProfileName" placeholder="Namn på ny profil…" maxlength="20">
           <button class="mbtn mb-blue" id="addProfileBtn">➕ Skapa profil</button>
-        </div>
-      </div>
-
-      <div class="acc-section">
-        <button class="acc-head">📌 Skolläge <span class="arrow">▶</span></button>
-        <div class="acc-body">
+          <div class="set-label">📌 Skolläge</div>
           <div class="hint" id="lockInfo"></div>
           <button class="mbtn mb-purple" id="lockFolderBtn">📌 Lås till denna kategori</button>
         </div>
       </div>
 
       <div class="acc-section">
-        <button class="acc-head">📦 Startpaket <span class="arrow">▶</span></button>
+        <button class="acc-head">🔐 Säkerhetskopia & PIN <span class="arrow">▶</span></button>
         <div class="acc-body">
-          <div class="hint">Lägger till en färdig kategori med kort på den plats du står just nu. Du kan byta bilder och ljud efteråt.</div>
-          <div id="packList" style="display:flex;flex-direction:column;gap:8px"></div>
-        </div>
-      </div>
-
-      <div class="acc-section">
-        <button class="acc-head">📤 Säkerhetskopiera <span class="arrow">▶</span></button>
-        <div class="acc-body">
+          <div class="set-label">Säkerhetskopia</div>
           <div class="hint">Gäller den aktiva profilen.</div>
           <button class="mbtn mb-blue" id="exportBtn">📤 Spara säkerhetskopia</button>
           <button class="mbtn mb-blue" id="importBtn">📥 Återställ från fil</button>
-        </div>
-      </div>
-
-      <div class="acc-section">
-        <button class="acc-head">🔑 Byt PIN-kod <span class="arrow">▶</span></button>
-        <div class="acc-body">
+          <div class="set-label">Byt PIN-kod</div>
           <input type="password" inputmode="numeric" pattern="[0-9]{4}" autocomplete="new-password" id="newPin1" placeholder="Ny PIN (4 siffror)" maxlength="4" aria-label="Ny PIN-kod">
           <input type="password" inputmode="numeric" pattern="[0-9]{4}" autocomplete="new-password" id="newPin2" placeholder="Upprepa PIN" maxlength="4" aria-label="Upprepa PIN-kod">
           <button class="mbtn mb-purple" id="savePinBtn">Spara ny PIN-kod</button>
         </div>
       </div>
 
-      <div class="acc-section">
-        <button class="acc-head">☕ Stöd appen <span class="arrow">▶</span></button>
-        <div class="acc-body">
-          <div class="hint">Bildstöd är gratis. Gillar du appen får du gärna stötta utvecklingen ❤️</div>
-          <button class="mbtn mb-green" id="supportBtn">☕ Stöd Bildstöd via Swish</button>
-        </div>
-      </div>
-
       <button class="mbtn mb-red" id="lockNowBtn">🔒 Lås vuxenläge</button>
+      <button class="link-btn" id="supportBtn">☕ Bildstöd är gratis – stöd utvecklingen via Swish ❤️</button>
       <input type="file" id="importFileInput" accept="application/json,.json" class="file-hidden">
     </div>
     <button class="mbtn mb-gray" style="margin:16px auto 0;max-width:280px" id="pinCancel">Avbryt</button>

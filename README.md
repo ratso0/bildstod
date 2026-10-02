@@ -18,7 +18,6 @@
 - 🙈 **Dölj kort** tillfälligt utan att ta bort dem
 - 👧 **Profiler** — flera barn kan dela samma enhet med egna kort
 - 📌 **Skolläge** — lås appen till en kategori
-- 📦 **Startpaket** — färdiga kategorier som Mat & dryck, Känslor, Behov och Aktiviteter
 - 🔒 **Vuxenläge** — PIN-skyddad redigering så barn inte råkar ändra något
 - 🌓 **Mörkt läge** — följer telefonens inställning eller väljs manuellt
 - 📤 **Säkerhetskopiering** — spara och återställ korten som en fil
@@ -59,7 +58,7 @@ Har du glömt koden trycker du på **"Glömt PIN-koden?"** och svarar på en enk
 I vuxenläget kan du:
 - Lägga till, redigera, dölja, sortera och ta bort kort och kategorier
 - Ändra visning, talsyntes och egen Ja/Nej-röst
-- Hantera profiler, skolläge och startpaket
+- Hantera profiler och skolläge
 - Säkerhetskopiera och återställa
 - Byta PIN-kod
 
