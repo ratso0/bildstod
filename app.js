@@ -1361,7 +1361,8 @@ function renderProfileList() {
       use.addEventListener("click", () => switchProfile(p.id));
     }
     row.appendChild(use);
-    if (p.id !== "default" && p.id !== profileId) {
+    // Alla profiler kan tas bort så länge minst en finns kvar
+    if (profiles.length > 1) {
       const del = document.createElement("button");
       del.className = "del";
       del.textContent = "🗑️";
@@ -1371,6 +1372,8 @@ function renderProfileList() {
         profiles = profiles.filter(x => x.id !== p.id);
         saveProfiles();
         store.del("bildstod_lock_" + p.id);
+        // Den aktiva profilens databas är öppen och måste stängas innan den kan raderas
+        if (p.id === profileId) await switchProfile(profiles[0].id);
         try { indexedDB.deleteDatabase(dbNameFor(p.id)); } catch {}
         renderProfileList();
         toast("Profil borttagen");
