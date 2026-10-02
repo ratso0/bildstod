@@ -49,7 +49,8 @@ body.dark .strip { background: #1a1e2b; border-color: #2a3044; }
 body.dark .strip-item { background: var(--surface); }
 body.dark .seg button { background: #12141c; color: var(--text); border-color: var(--line); }
 body.dark .profile-row { background: #12141c; }
-#app { display: flex; flex-direction: column; height: 100vh; height: 100dvh; }
+/* 100vh sist: i iPhone-hemskärmsläge blir 100dvh för kort och lämnar ett glapp längst ner */
+#app { display: flex; flex-direction: column; height: 100dvh; height: 100vh; }
 
 /* ── HEADER ── */
 header {
