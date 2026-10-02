@@ -1,7 +1,7 @@
 // Service worker för Bildstöd
 // Appfilerna hämtas från nätet först (så att nya versioner kommer fram direkt)
 // och från cachen när enheten är offline. Typsnitt, ikoner och bibliotek tas från cachen först.
-const CACHE = 'bildstod-0.12';
+const CACHE = 'bildstod-0.13';
 const APP_FILES = [
   './',
   './index.html',
